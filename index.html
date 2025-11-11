@@ -47,6 +47,33 @@
             margin: 0 auto;
         }
 
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            gap: 0.5rem;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background-color: var(--secondary-navy);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(8px, 8px);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -7px);
+        }
+
         .logo-section {
             display: flex;
             align-items: center;
@@ -76,6 +103,18 @@
             gap: 2rem;
             list-style: none;
             align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links.hidden {
+            display: none;
+        }
+
+        /* Show nav-links on desktop regardless of hidden class */
+        @media (min-width: 769px) {
+            .nav-links.hidden {
+                display: flex !important;
+            }
         }
 
         .nav-links a {
@@ -111,16 +150,32 @@
 
         @media (max-width: 768px) {
             nav {
-                flex-direction: column;
-                gap: 1rem;
-                padding: 1rem;
+                flex-direction: row;
+                gap: 0;
+                padding: 1rem 2rem;
+            }
+
+            .hamburger {
+                display: flex;
             }
 
             .nav-links {
+                position: absolute;
+                top: 70px;
+                left: 0;
+                right: 0;
                 flex-direction: column;
                 gap: 1rem;
                 width: 100%;
                 text-align: center;
+                background-color: var(--white);
+                padding: 1.5rem;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+                z-index: 999;
+            }
+
+            .nav-links.hidden {
+                display: none;
             }
 
             .cta-button {
@@ -456,12 +511,17 @@
                 <img src="assets/images/logo_rectangular.png" alt="Vijaypath Consultancy Logo" class="logo-img">
                 <!-- <span class="brand-name">Vijaypath</span> -->
             </div>
-            <ul class="nav-links">
+            <ul class="nav-links hidden" id="navLinks">
                 <li><a href="#about">About</a></li>
                 <li><a href="#services">Services</a></li>
                 <li><a href="#contact">Contact</a></li>
                 <li><a href="#contact" class="cta-button">Get in Touch</a></li>
             </ul>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
         </nav>
     </header>
 
@@ -623,7 +683,13 @@
                     <div class="contact-icon">
                         <i class="fas fa-phone"></i>
                     </div>
-                    <a href="tel:+1-800-HEALTHCARE" class="contact-link">+1 (800) HEALTH-CARE</a>
+                    <a href="tel:+919970025678" class="contact-link">+91 9970025678</a>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">
+                        <i class="fab fa-whatsapp"></i>
+                    </div>
+                    <a href="https://wa.me/919970025678?text=I%27d%20like%20to%20discuss%20your%20consulting%20services" target="_blank" class="contact-link">WhatsApp</a>
                 </div>
             </div>
         </div>
@@ -633,5 +699,25 @@
     <footer>
         <p>&copy; 2025 Vijaypath Consultancy.  All rights reserved.</p>
     </footer>
+
+    <script>
+        // Mobile menu toggle functionality
+        const hamburger = document.getElementById('hamburger');
+        const navLinks = document.getElementById('navLinks');
+
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navLinks.classList.toggle('hidden');
+        });
+
+        // Close menu when a link is clicked
+        const navItems = navLinks.querySelectorAll('a');
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                hamburger.classList.remove('active');
+                navLinks.classList.add('hidden');
+            });
+        });
+    </script>
 </body>
 </html>
