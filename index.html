@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vijaypath Consultancy - Healthcare Excellence & Transformation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-teal: #1BA89C;
+            --secondary-navy: #1B2A4F;
+            --light-bg: #f8fafc;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --white: #ffffff;
+            --border-light: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background-color: var(--white);
+        }
+
+        /* ===== HEADER & NAVIGATION ===== */
+        header {
+            position: sticky;
+            top: 0;
+            background-color: var(--white);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-img {
+            height: 70px;
+            width: auto;
+        }
+
+        .brand-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--secondary-navy);
+            display: none;
+        }
+
+        @media (min-width: 768px) {
+            .brand-name {
+                display: block;
+            }
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 500;
+            transition: color 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-teal);
+        }
+
+        .cta-button {
+            background-color: var(--primary-teal);
+            color: var(--white);
+            padding: 0.7rem 1.5rem;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .cta-button:hover {
+            background-color: var(--secondary-navy);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(27, 168, 156, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                gap: 1rem;
+                width: 100%;
+                text-align: center;
+            }
+
+            .cta-button {
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero {
+            background: linear-gradient(135deg, var(--secondary-navy) 0%, #2d4a7a 100%);
+            color: var(--white);
+            padding: 5rem 2rem;
+            text-align: center;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            color: #cbd5e1;
+            max-width: 700px;
+        }
+
+        .hero .cta-button {
+            background-color: var(--primary-teal);
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            display: inline-block;
+        }
+
+        @media (max-width: 768px) {
+            .hero {
+                padding: 3rem 1rem;
+                min-height: auto;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1.1rem;
+            }
+        }
+
+        /* ===== EXPERTISE SECTION ===== */
+        .expertise {
+            background-color: var(--light-bg);
+            padding: 4rem 2rem;
+        }
+
+        .expertise-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .expertise-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .expertise-header h2 {
+            font-size: 2.5rem;
+            color: var(--secondary-navy);
+            margin-bottom: 1rem;
+        }
+
+        .expertise-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .stat-card {
+            background-color: var(--white);
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border-top: 4px solid var(--primary-teal);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(27, 168, 156, 0.2);
+        }
+
+        .stat-icon {
+            font-size: 3rem;
+            color: var(--primary-teal);
+            margin-bottom: 1rem;
+        }
+
+        .stat-card h3 {
+            font-size: 2.5rem;
+            color: var(--secondary-navy);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .stat-card p {
+            color: var(--text-light);
+            font-size: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .expertise-header h2 {
+                font-size: 1.8rem;
+            }
+
+            .stat-card h3 {
+                font-size: 2rem;
+            }
+        }
+
+        /* ===== SERVICES SECTION ===== */
+        .services {
+            padding: 4rem 2rem;
+            background-color: var(--white);
+        }
+
+        .services-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .services-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .services-header h2 {
+            font-size: 2.5rem;
+            color: var(--secondary-navy);
+            margin-bottom: 1rem;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .service-card {
+            background-color: var(--light-bg);
+            padding: 2rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .service-card:hover {
+            border-left-color: var(--primary-teal);
+            transform: translateX(5px);
+            box-shadow: 0 8px 20px rgba(27, 168, 156, 0.15);
+        }
+
+        .service-icon {
+            font-size: 2.5rem;
+            color: var(--primary-teal);
+            margin-bottom: 1rem;
+        }
+
+        .service-card h3 {
+            font-size: 1.3rem;
+            color: var(--secondary-navy);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .service-card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .service-card li {
+            color: var(--text-light);
+            padding: 0.4rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .service-card li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--primary-teal);
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .services-header h2 {
+                font-size: 1.8rem;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== CONTACT SECTION ===== */
+        .contact {
+            background: linear-gradient(135deg, var(--secondary-navy) 0%, #2d4a7a 100%);
+            color: var(--white);
+            padding: 4rem 2rem;
+        }
+
+        .contact-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .contact-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .contact-header p {
+            font-size: 1.1rem;
+            color: #cbd5e1;
+            margin-bottom: 2rem;
+        }
+
+        .contact-icons {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .contact-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .contact-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .contact-icon {
+            font-size: 2.5rem;
+            color: var(--primary-teal);
+            transition: all 0.3s ease;
+        }
+
+        .contact-item:hover .contact-icon {
+            transform: scale(1.2);
+        }
+
+        .contact-link {
+            color: var(--white);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .contact-link:hover {
+            color: var(--primary-teal);
+        }
+
+        @media (max-width: 768px) {
+            .contact-header h2 {
+                font-size: 1.8rem;
+            }
+
+            .contact-icons {
+                gap: 1.5rem;
+            }
+
+            .contact-icon {
+                font-size: 2rem;
+            }
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            background-color: var(--secondary-navy);
+            color: var(--white);
+            text-align: center;
+            padding: 2rem;
+            border-top: 3px solid var(--primary-teal);
+        }
+
+        footer p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+        }
+
+        /* ===== SMOOTH SCROLLING ===== */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* ===== UTILITY CLASSES ===== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        section {
+            scroll-margin-top: 80px;
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== HEADER & NAVIGATION ===== -->
+    <header>
+        <nav>
+            <div class="logo-section">
+                <img src="assets/images/logo_rectangular.png" alt="Vijaypath Consultancy Logo" class="logo-img">
+                <!-- <span class="brand-name">Vijaypath</span> -->
+            </div>
+            <ul class="nav-links">
+                <li><a href="#about">About</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#contact">Contact</a></li>
+                <li><a href="#contact" class="cta-button">Get in Touch</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- ===== HERO SECTION ===== -->
+    <section class="hero" id="about">
+        <h1>The Pathway to Healthcare Excellence and Transformation</h1>
+        <p>Expert healthcare consultancy focused on technical excellence and organizational transformation. Empowering healthcare organizations to excel in both technical horizons and sustainable growth.</p>
+        <a href="#services" class="cta-button">Explore Our Services</a>
+    </section>
+
+    <!-- ===== EXPERTISE SECTION ===== -->
+    <section class="expertise">
+        <div class="expertise-container">
+            <div class="expertise-header">
+                <h2>Our Proven Expertise</h2>
+            </div>
+            <div class="expertise-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3>15+</h3>
+                    <p>Years of Experience in Healthcare Consulting</p>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <h3>100+</h3>
+                    <p>Healthcare Projects Successfully Delivered</p>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-hospital"></i>
+                    </div>
+                    <h3>50+</h3>
+                    <p>Organizations Transformed & Empowered</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== SERVICES SECTION ===== -->
+    <section class="services" id="services">
+        <div class="services-container">
+            <div class="services-header">
+                <h2>Comprehensive Healthcare Consulting Services</h2>
+                <p style="color: var(--text-light); font-size: 1.1rem;">From digital transformation to operational excellence, we provide end-to-end consulting services that drive measurable improvements</p>
+            </div>
+            <div class="services-grid">
+                <!-- Service 1 -->
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-digital-tachograph"></i>
+                    </div>
+                    <h3>Healthcare Digital Transformation</h3>
+                    <ul>
+                        <li>EHR Implementation & Optimization</li>
+                        <li>System Integration Solutions</li>
+                        <li>Telehealth Solutions</li>
+                        <li>Digital Workflow Design</li>
+                    </ul>
+                </div>
+
+                <!-- Service 2 -->
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Operational Excellence & Process Optimization</h3>
+                    <ul>
+                        <li>Process Redesign & Optimization</li>
+                        <li>Lean Healthcare Implementation</li>
+                        <li>Quality Improvement Programs</li>
+                        <li>Cost Reduction Strategies</li>
+                    </ul>
+                </div>
+
+                <!-- Service 3 -->
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-people-arrows"></i>
+                    </div>
+                    <h3>Change Management & Organizational Development</h3>
+                    <ul>
+                        <li>Change Strategy Development</li>
+                        <li>Staff Training & Development</li>
+                        <li>Cultural Transformation Initiatives</li>
+                        <li>Leadership Development Programs</li>
+                    </ul>
+                </div>
+
+                <!-- Service 4 -->
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <h3>Performance Analytics & Data Intelligence</h3>
+                    <ul>
+                        <li>KPI Development & Monitoring</li>
+                        <li>Healthcare Analytics Solutions</li>
+                        <li>Performance Dashboards</li>
+                        <li>ROI Measurement & Optimization</li>
+                    </ul>
+                </div>
+
+                <!-- Service 5 -->
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Regulatory Compliance & Risk Management</h3>
+                    <ul>
+                        <li>HIPAA Compliance Programs</li>
+                        <li>Joint Commission Readiness</li>
+                        <li>Risk Assessment & Mitigation</li>
+                        <li>Audit Preparation & Support</li>
+                    </ul>
+                </div>
+
+                <!-- Service 6 -->
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-compass"></i>
+                    </div>
+                    <h3>Strategic Planning & Healthcare Innovation</h3>
+                    <ul>
+                        <li>Strategic Planning Services</li>
+                        <li>Innovation Program Development</li>
+                        <li>Market Analysis & Positioning</li>
+                        <li>Future-State Design & Roadmaps</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CONTACT SECTION ===== -->
+    <section class="contact" id="contact">
+        <div class="contact-container">
+            <div class="contact-header">
+                <h2>Get in Touch</h2>
+                <p>Let's discuss how we can help your healthcare organization achieve excellence and sustainable transformation</p>
+            </div>
+            <div class="contact-icons">
+                <div class="contact-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <a href="mailto:contact@vijaypath.com" class="contact-link">contact@vijaypath.com</a>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">
+                        <i class="fab fa-linkedin"></i>
+                    </div>
+                    <a href="https://linkedin.com/in/vijaypath" target="_blank" class="contact-link">LinkedIn Profile</a>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <a href="tel:+1-800-HEALTHCARE" class="contact-link">+1 (800) HEALTH-CARE</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer>
+        <p>&copy; 2025 Vijaypath Consultancy.  All rights reserved.</p>
+    </footer>
+</body>
+</html>
