@@ -1,0 +1,1381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PathDesk Prototype</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/assets/images/favicon.ico" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Stage: two device frames side by side (stacked on narrow screens), scaled to fit. The app inside the devices is a single light clinical theme on purpose. */
+:root{
+  --st-bg:#e6ecee; --st-fg:#14242a; --st-muted:#566a71; --st-card:#ffffff; --st-line:#cfdadd; --st-accent:#0b7d72;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  /* app (inside devices) */
+  --a-bg:#f2f6f6; --a-card:#ffffff; --a-ink:#13242b; --a-muted:#5a6d73; --a-line:#dde6e6; --a-field:#cad8d8;
+  --a-pri:#0b7d72; --a-pri-ink:#ffffff; --a-pri-soft:#e0f2ef; --a-side:#0f2b2f; --a-side-ink:#cfe3e1;
+  --a-warn:#8a5300; --a-warn-soft:#fdf0d9; --a-bad:#b42318; --a-bad-soft:#fde8e6; --a-urg:#a14d00; --a-urg-soft:#ffeedd;
+  --s1:#0b8f83; --s2:#c9790a;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--st-bg:#0b1315;--st-fg:#e1eaec;--st-muted:#93a6ac;--st-card:#142024;--st-line:#26363b;--st-accent:#3cc9b8;color-scheme:dark}}
+:root[data-theme="dark"]{--st-bg:#0b1315;--st-fg:#e1eaec;--st-muted:#93a6ac;--st-card:#142024;--st-line:#26363b;--st-accent:#3cc9b8;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--st-bg);color:var(--st-fg);font:14px/1.5 var(--f-body)}
+.stage-wrap{max-width:1600px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.st-head{display:flex;flex-wrap:wrap;align-items:center;gap:14px 24px;margin-bottom:14px}
+.st-brand{display:flex;align-items:center;gap:12px}
+.st-brand svg{width:40px;height:40px;flex:none}
+.st-brand h1{font:700 22px/1.1 var(--f-display);margin:0}
+.st-brand p{margin:2px 0 0;color:var(--st-muted);font-size:13px}
+.st-tools{margin-left:auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.st-btn{font:500 13px var(--f-body);padding:7px 12px;border-radius:8px;border:1px solid var(--st-line);background:var(--st-card);color:var(--st-fg);cursor:pointer}
+.st-btn:hover{border-color:var(--st-accent)}
+.st-btn:focus-visible{outline:2px solid var(--st-accent);outline-offset:2px}
+.st-hint{background:var(--st-card);border:1px solid var(--st-line);border-radius:10px;padding:10px 14px;font-size:13.5px;color:var(--st-muted);margin-bottom:18px;max-width:1100px}
+.st-hint b{color:var(--st-fg);font-weight:600}
+.sync{font:12.5px var(--f-mono);color:var(--st-muted)}
+#stage{display:flex;gap:40px;align-items:flex-start;justify-content:center}
+#stage.stack{flex-direction:column;align-items:center;gap:28px}
+.slot-wrap{display:flex;flex-direction:column;gap:8px;min-width:0}
+.slot-cap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--st-muted)}
+.slot-cap b{font:600 13px var(--f-display);color:var(--st-fg)}
+.slot-cap select{font:inherit;padding:3px 6px;border-radius:6px;border:1px solid var(--st-line);background:var(--st-card);color:var(--st-fg)}
+.slot{position:relative}
+.device{position:absolute;left:0;top:0;transform-origin:0 0;background:#0c1416;box-shadow:0 30px 60px -30px rgba(0,0,0,.45),0 0 0 1px rgba(0,0,0,.25)}
+.device.phone{width:414px;height:868px;border-radius:54px;padding:12px}
+.device.tablet{width:1060px;height:804px;border-radius:34px;padding:18px}
+.screen{position:relative;width:100%;height:100%;overflow:hidden;background:var(--a-bg);color:var(--a-ink);font:15px/1.45 var(--f-body);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+.phone .screen{border-radius:42px}
+.tablet .screen{border-radius:18px}
+
+/* ---------- App ---------- */
+.screen button{font:inherit;color:inherit;cursor:pointer}
+.screen button:focus-visible,.screen input:focus-visible,.screen select:focus-visible,.screen textarea:focus-visible,.screen [tabindex]:focus-visible{outline:2px solid var(--a-pri);outline-offset:1px}
+.sbar{flex:none;display:flex;align-items:center;justify-content:space-between;background:var(--a-card);font:600 14px var(--f-display);position:relative;z-index:2}
+.phone .sbar{height:46px;padding:4px 30px 0}
+.phone .sbar::after{content:"";position:absolute;left:50%;top:9px;width:118px;height:32px;margin-left:-59px;border-radius:20px;background:#0c1416}
+.tablet .sbar{height:24px;padding:0 18px;font-size:12px}
+.sbar .ico{display:flex;gap:5px;align-items:center}
+.sbar .ico i{display:block;background:currentColor;border-radius:2px}
+.app{flex:1;min-height:0;display:flex}
+.app.ph{flex-direction:column}
+.top{flex:none;display:flex;align-items:center;gap:10px;min-height:56px;padding:0 14px;background:var(--a-card);border-bottom:1px solid var(--a-line)}
+.top h1{font:600 18px/1.2 var(--f-display);margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .sub{display:block;font:400 12px var(--f-body);color:var(--a-muted)}
+.iconbtn{width:38px;height:38px;border-radius:10px;border:0;background:transparent;display:grid;place-items:center;flex:none}
+.iconbtn:hover{background:var(--a-bg)}
+.i{width:20px;height:20px;flex:none}
+.i.sm{width:16px;height:16px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--a-pri-soft);color:var(--a-pri);display:grid;place-items:center;font:600 13px var(--f-display);flex:none;border:0}
+.scroll{flex:1;min-height:0;overflow:auto;padding:16px;-webkit-overflow-scrolling:touch}
+.tb .scroll{padding:20px 24px 28px}
+.scroll.full{padding:0!important;overflow:hidden;display:flex}
+.tabbar{flex:none;display:flex;background:var(--a-card);border-top:1px solid var(--a-line);padding:6px 6px 24px}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:500;color:var(--a-muted);background:none;border:0;padding:4px 0}
+.tabbar button.on{color:var(--a-pri)}
+.side{width:228px;flex:none;background:var(--a-side);color:var(--a-side-ink);display:flex;flex-direction:column;padding:16px 12px 14px;gap:4px}
+.side .brand{display:flex;align-items:center;gap:10px;padding:2px 6px 16px}
+.side .brand svg{width:34px;height:34px}
+.side .brand b{display:block;font:700 17px/1.1 var(--f-display);color:#fff}
+.side .brand span{font-size:11px;color:#8fb0ad}
+.side nav{display:flex;flex-direction:column;gap:2px;flex:1;overflow:auto}
+.side nav button{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;border:0;background:none;color:var(--a-side-ink);font-size:14px;text-align:left}
+.side nav button:hover{background:rgba(255,255,255,.06)}
+.side nav button.on{background:rgba(60,201,184,.16);color:#fff}
+.side .me{display:flex;align-items:center;gap:10px;padding:10px 6px 0;border-top:1px solid rgba(255,255,255,.08);font-size:13px}
+.side .me .avatar{background:rgba(60,201,184,.18);color:#bff0e8}
+.side .me small{display:block;color:#8fb0ad;font-size:11.5px}
+.side .me button{margin-left:auto;background:none;border:0;color:#8fb0ad}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+
+.card{background:var(--a-card);border:1px solid var(--a-line);border-radius:14px;padding:14px 16px}
+.sec{font:600 11.5px/1 var(--f-display);letter-spacing:.09em;text-transform:uppercase;color:var(--a-muted);margin:22px 2px 10px;display:flex;align-items:center;gap:8px}
+.sec:first-child{margin-top:4px}
+.sec .r{margin-left:auto;text-transform:none;letter-spacing:0;font:500 12.5px var(--f-body)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:42px;padding:0 16px;border-radius:11px;border:1px solid var(--a-field);background:var(--a-card);font-weight:600!important;font-size:14px;white-space:nowrap}
+.btn:hover{border-color:var(--a-pri)}
+.btn.pri{background:var(--a-pri);color:var(--a-pri-ink)!important;border-color:var(--a-pri)}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.pri:disabled{opacity:.45;cursor:not-allowed}
+.btn.danger{color:var(--a-bad)!important}
+.btn.sm{height:32px;padding:0 11px;font-size:13px;border-radius:9px}
+.btn.block{width:100%}
+.link{background:none;border:0;padding:0;color:var(--a-pri)!important;font-weight:600}
+.inp{width:100%;height:44px;border:1px solid var(--a-field);border-radius:11px;padding:0 12px;font:inherit;font-size:15px;background:var(--a-card);color:var(--a-ink)}
+textarea.inp{height:auto;padding:10px 12px;resize:vertical;min-height:72px}
+select.inp{padding-right:8px}
+.search{position:relative}
+.search .i{position:absolute;left:12px;top:12px;color:var(--a-muted)}
+.search .inp{padding-left:40px}
+.field{display:grid;gap:5px;min-width:0}
+.field>label,.flabel{font-size:12.5px;font-weight:600;color:var(--a-muted)}
+.field .err{color:var(--a-bad);font-size:12.5px}
+.field.bad .inp{border-color:var(--a-bad)}
+.fgrid{display:grid;grid-template-columns:1fr;gap:14px}
+.tb .fgrid{grid-template-columns:1fr 1fr}
+.fgrid .wide{grid-column:1/-1}
+.row{display:flex;align-items:center;gap:10px;min-width:0}
+.grow{flex:1;min-width:0}
+.muted{color:var(--a-muted)}
+.small{font-size:12.5px}
+.mono{font-family:var(--f-mono);font-size:.92em}
+.num{font-variant-numeric:tabular-nums}
+.list{background:var(--a-card);border:1px solid var(--a-line);border-radius:14px;overflow:hidden}
+.li{display:flex;align-items:center;gap:12px;padding:12px 14px;border:0;border-bottom:1px solid var(--a-line);width:100%;text-align:left;background:none}
+button.li:hover{background:#f7fafa}
+.li:last-child{border-bottom:0}
+.li .t{font-weight:600}
+.li .m{font-size:12.5px;color:var(--a-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .chev{color:#a9b8bb}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;line-height:1;padding:4px 7px;border-radius:999px;background:#ebf1f1;color:#41555c;white-space:nowrap}
+.chip.ok{background:#e0f2ee;color:#0b6b62}
+.chip.warn{background:var(--a-warn-soft);color:var(--a-warn)}
+.chip.bad{background:var(--a-bad-soft);color:var(--a-bad)}
+.chip.urg{background:var(--a-urg-soft);color:var(--a-urg)}
+.chip.dark{background:#13242b;color:#fff}
+.tube{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#41555c;white-space:nowrap}
+.tube::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c,#6f8a83)}
+.seg{display:inline-flex;background:#e5ecec;border-radius:11px;padding:3px;gap:2px}
+.seg button{border:0;background:none;padding:6px 12px;border-radius:9px;font-weight:600;font-size:13px;color:var(--a-muted)}
+.seg button.on{background:var(--a-card);color:var(--a-ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.sw{width:40px;height:24px;border-radius:12px;border:0;background:#c5d2d2;position:relative;flex:none;padding:0}
+.sw::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .15s}
+.sw[aria-checked="true"]{background:var(--a-pri)}
+.sw[aria-checked="true"]::after{left:19px}
+.note{background:var(--a-warn-soft);color:#5d3b00;border-radius:10px;padding:10px 12px;font-size:13px}
+.note.info{background:var(--a-pri-soft);color:#0a4f48}
+.empty{padding:28px 16px;text-align:center;color:var(--a-muted);font-size:14px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px}
+.kv dt{color:var(--a-muted)}
+.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.split{display:grid;grid-template-columns:1fr;gap:16px}
+.tb .split{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+.stack{display:grid;gap:12px}
+
+/* Home */
+.hello{font:600 22px/1.2 var(--f-display);margin:2px 0 4px}
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mini{background:var(--a-card);border:1px solid var(--a-line);border-radius:12px;padding:10px 12px}
+.mini b{display:block;font:600 22px/1.1 var(--f-display)}
+.mini span{font-size:12px;color:var(--a-muted)}
+
+/* Order builder */
+.ob{display:grid;grid-template-columns:minmax(0,1fr) 350px;width:100%;min-height:0}
+.ob>div{min-height:0;overflow:auto}
+.ob .pickcol{padding:18px 20px 24px}
+.ob .selcol{border-left:1px solid var(--a-line);background:var(--a-card);display:flex;flex-direction:column;overflow:hidden}
+.selcol .sel-scroll{flex:1;min-height:0;overflow:auto;padding:16px 18px}
+.selcol .sel-foot{flex:none;padding:12px 18px 16px;border-top:1px solid var(--a-line)}
+.pitem{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--a-line);background:var(--a-card)}
+.pitem:last-child{border-bottom:0}
+.pitem .nm{font-weight:500;font-size:14.5px}
+.pitem .mt{font-size:12px;color:var(--a-muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:2px}
+.add{width:34px;height:34px;border-radius:10px;border:1px solid var(--a-field);background:var(--a-card);display:grid;place-items:center;flex:none;color:var(--a-pri)}
+.add.on{background:var(--a-pri);border-color:var(--a-pri);color:#fff}
+.add:disabled{opacity:.4;cursor:not-allowed}
+.catbtn{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;border:0;border-bottom:1px solid var(--a-line);background:var(--a-card);text-align:left;font-weight:600}
+.catbtn .cnt{margin-left:auto;font-weight:400;font-size:12.5px;color:var(--a-muted)}
+.subh{font:600 11px/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--a-pri);padding:12px 12px 8px;background:#f7fafa;border-bottom:1px solid var(--a-line)}
+.bchips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.bchip{flex:none;width:170px;text-align:left;border:1px solid var(--a-line);background:var(--a-card);border-radius:12px;padding:10px 12px}
+.bchip.on{border-color:var(--a-pri);background:var(--a-pri-soft)}
+.bchip b{display:block;font-size:13.5px;line-height:1.3}
+.bchip span{font-size:12px;color:var(--a-muted)}
+.tb .bchips{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));overflow:visible}
+.tb .bchip{width:auto}
+.selitem{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--a-line)}
+.selitem:last-child{border-bottom:0}
+.selitem .x{border:0;background:none;color:var(--a-muted);padding:2px}
+.selitem ul{margin:4px 0 0;padding-left:16px;font-size:12.5px;color:var(--a-muted)}
+.obar{flex:none;display:flex;align-items:center;gap:12px;background:var(--a-card);border-top:1px solid var(--a-line);padding:10px 14px 26px}
+.obar .sum{flex:1;min-width:0;font-size:13px;color:var(--a-muted)}
+.obar .sum b{display:block;font:600 16px var(--f-display);color:var(--a-ink)}
+.tubes{display:flex;flex-wrap:wrap;gap:6px 12px}
+.total{display:flex;justify-content:space-between;align-items:baseline;font:600 15px var(--f-display);padding-top:10px}
+
+/* Order view */
+.ohead{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ono{font:600 20px/1.2 var(--f-mono);letter-spacing:-.01em}
+.emailcard{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+
+/* Modal */
+.modal{position:absolute;inset:0;background:rgba(9,24,27,.5);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.tb .modal{align-items:center}
+.sheet{background:var(--a-card);width:100%;max-height:92%;border-radius:20px 20px 0 0;display:flex;flex-direction:column;overflow:hidden}
+.tb .sheet{width:640px;max-height:90%;border-radius:18px}
+.mhead{flex:none;display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--a-line)}
+.mhead b{font:600 17px var(--f-display);flex:1}
+.mbody{flex:1;min-height:0;overflow:auto;padding:16px}
+.mfoot{flex:none;display:flex;gap:10px;justify-content:flex-end;padding:12px 16px 16px;border-top:1px solid var(--a-line)}
+.ph .mfoot{padding-bottom:28px}
+.ph .mfoot .btn{flex:1}
+.mailhdr{display:grid;grid-template-columns:64px 1fr;gap:6px 10px;font-size:13.5px;margin:12px 0}
+.mailhdr dt{color:var(--a-muted)}
+.mailhdr dd{margin:0;overflow-wrap:anywhere}
+.mailbody{font:12px/1.55 var(--f-mono);background:#f6f9f9;border:1px solid var(--a-line);border-radius:10px;padding:12px;white-space:pre;overflow-x:auto;margin:0}
+.ph .mailbody{font-size:10.5px}
+
+.toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);background:#13242b;color:#fff;padding:10px 14px;border-radius:11px;font-size:13.5px;z-index:30;width:max-content;max-width:86%;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:tin .2s ease-out}
+.tb .toast{bottom:28px}
+.toast.warn{background:#5d3b00}
+.toast.bad{background:var(--a-bad)}
+@keyframes tin{from{transform:translate(-50%,8px);opacity:.4}}
+.lead-logo{width:32px;height:32px;display:block;flex:none}
+.lead-logo svg{width:32px;height:32px;display:block}
+.chip .i{width:12px;height:12px}
+.tip{position:absolute;z-index:40;background:#13242b;color:#fff;font-size:12px;line-height:1.4;padding:6px 9px;border-radius:7px;pointer-events:none;max-width:240px}
+.flash{animation:flash 3s ease-out}
+@keyframes flash{0%,40%{background:#d6f1ec}}
+
+/* Login */
+.login{flex:1;display:flex;flex-direction:column;justify-content:center;padding:28px;gap:22px;overflow:auto;background:linear-gradient(180deg,#e3f1ef 0%,var(--a-bg) 55%)}
+.tb .login{align-items:center}
+.login .lbrand{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.login .lbrand svg{width:72px;height:72px}
+.login .lbrand b{font:700 28px/1 var(--f-display)}
+.login .lbrand span{color:var(--a-muted);font-size:13.5px}
+.login .card{width:100%;max-width:420px;display:grid;gap:12px;margin:0 auto}
+.demo{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--a-line);border-radius:12px;background:var(--a-card);text-align:left;width:100%}
+.demo:hover{border-color:var(--a-pri)}
+.demo:disabled{opacity:.5;cursor:not-allowed}
+
+/* Dashboard */
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tb .kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi{background:var(--a-card);border:1px solid var(--a-line);border-radius:14px;padding:12px 14px;min-width:0}
+.kpi .l{font-size:12px;color:var(--a-muted);font-weight:500}
+.kpi .v{font:600 24px/1.15 var(--f-display);margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.kpi .d{font-size:11.5px;color:var(--a-muted)}
+.kpi.alert{border-color:#f2b8b2;background:#fff8f7}
+.dgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-top:12px}
+.tb .dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.panel{background:var(--a-card);border:1px solid var(--a-line);border-radius:14px;padding:14px 16px;min-width:0}
+.panel h3{font:600 14.5px/1.3 var(--f-display);margin:0}
+.panel .ps{font-size:12px;color:var(--a-muted);margin:2px 0 10px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--a-muted);margin-bottom:8px;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.legend i.ln{height:2px;width:14px;border-radius:1px;vertical-align:3px}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:#5a6d73;font:10.5px var(--f-body)}
+.chart .gl{stroke:#e5ecec;stroke-width:1}
+.chart .hit{fill:transparent}
+.chart .xh{stroke:#9fb2b5;stroke-width:1;opacity:0}
+.chart .col:hover .xh{opacity:1}
+.hb{display:grid;grid-template-columns:minmax(0,118px) minmax(0,1fr) 44px;gap:6px 10px;align-items:center;font-size:12.5px}
+.tb .hb{grid-template-columns:minmax(0,150px) minmax(0,1fr) 44px}
+.hb .lb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#33474e}
+.hb .vl{text-align:right;font-variant-numeric:tabular-nums;color:#33474e;font-weight:500}
+.hb .track{display:flex;gap:2px;height:12px;align-items:stretch}
+.hb .bar{height:100%;border-radius:0 4px 4px 0;min-width:2px}
+.hb .bar:hover{filter:brightness(1.15)}
+.hb .track .bar:not(:last-child){border-radius:0}
+.hb button.lb{border:0;background:none;padding:0;text-align:left;color:var(--a-pri);font-weight:500}
+.heat{display:grid;grid-template-columns:30px repeat(12,minmax(0,1fr));gap:2px;font-size:10.5px;color:var(--a-muted)}
+.heat .c{aspect-ratio:1.5;border-radius:3px}
+.heat .c:hover{outline:2px solid #13242b;outline-offset:-1px}
+.heat .h{text-align:center}
+.heat .d{display:flex;align-items:center}
+.ramp{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--a-muted);margin-top:8px}
+.ramp i{display:block;width:80px;height:8px;border-radius:4px;background:linear-gradient(90deg,#e6f4f2,#086058)}
+.feed .li{padding:9px 0;border-bottom:1px solid var(--a-line)}
+.att{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--a-line);font-size:13.5px}
+.att:last-child,.feed .li:last-child{border-bottom:0}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;margin-top:6px}
+
+/* Tables */
+.tblw{overflow:auto;border:1px solid var(--a-line);border-radius:12px;background:var(--a-card);max-height:100%}
+table.t{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:tabular-nums}
+table.t th,table.t td{padding:7px 10px;border-bottom:1px solid var(--a-line);text-align:left;white-space:nowrap;vertical-align:top}
+table.t th{position:sticky;top:0;background:#f3f7f7;font:600 11px var(--f-display);letter-spacing:.04em;text-transform:uppercase;color:var(--a-muted);z-index:1}
+table.t th button{border:0;background:none;padding:0;font:inherit;color:inherit;letter-spacing:inherit;text-transform:inherit;display:inline-flex;gap:3px}
+table.t td.n,table.t th.n{text-align:right}
+table.t td.wrap{white-space:normal;min-width:220px}
+.rfilters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.rfilters select{height:36px;font-size:13.5px;width:auto}
+.rlist{display:grid;grid-template-columns:1fr;gap:10px}
+.tb .rlist{grid-template-columns:repeat(2,minmax(0,1fr))}
+.rcard{text-align:left;border:1px solid var(--a-line);background:var(--a-card);border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start}
+.rcard:hover{border-color:var(--a-pri)}
+.rcard .k{font:600 12px var(--f-mono);color:var(--a-pri);background:var(--a-pri-soft);border-radius:6px;padding:3px 6px;flex:none}
+.rcard b{display:block;font-size:14.5px}
+.rcard span{font-size:12.5px;color:var(--a-muted)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--a-line);margin-bottom:14px}
+.tabs button{border:0;background:none;padding:10px 12px;font-weight:600;color:var(--a-muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--a-pri);border-color:var(--a-pri)}
+.addrow{display:flex;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chips .chip{padding:6px 6px 6px 10px;font-size:12.5px}
+.chips .chip button{border:0;background:none;padding:0 2px;color:inherit;display:grid}
+@media (prefers-reduced-motion:reduce){.flash,.toast,.sw::after{animation:none;transition:none}}
+</style>
+</head>
+<body>
+<div class="stage-wrap">
+  <header class="st-head">
+    <div class="st-brand">
+      <svg viewBox="0 0 48 48" aria-hidden="true" id="logoSrc"><defs><linearGradient id="lg0" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12a596"/><stop offset="1" stop-color="#075a52"/></linearGradient></defs><rect width="48" height="48" rx="13" fill="url(#lg0)"/><g transform="rotate(28 24 24)"><path d="M18.5 9.5h11" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M20 10v20.5a4 4 0 0 0 8 0V10" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M21.6 21h4.8v9.5a2.4 2.4 0 0 1-4.8 0z" fill="#9ff3e7"/></g><circle cx="35.5" cy="34.5" r="5.5" fill="#fff"/><path d="M33 34.6l1.7 1.7 3.3-3.4" fill="none" stroke="#0a7a6f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><h1>PathDesk prototype</h1><p>Pathology lab test orders · Hinduja Hospital · clickable simulator</p></div>
+    </div>
+    <div class="st-tools">
+      <span class="sync" id="sync"></span>
+      <button class="st-btn" id="resetBtn" type="button">Reset demo data</button>
+    </div>
+  </header>
+  <div class="st-hint"><b>Both devices share one demo database.</b> Try this: on the phone (staff), search <b>98</b> or tap <b>New patient</b>, pick tests and save. Preview the email and press Send. The tablet (admin) dashboard and live feed update straight away. Use the selector above each device to sign in as someone else. Email is simulated and nothing leaves this page.</div>
+  <div id="stage">
+    <div class="slot-wrap" id="wrap-phone">
+      <div class="slot-cap"><b>Phone</b><span>390 × 844</span><label>Signed in as <select id="who-phone"></select></label></div>
+      <div class="slot" id="slot-phone"><div class="device phone" id="dev-phone"><div class="screen" id="scr-phone"></div></div></div>
+    </div>
+    <div class="slot-wrap" id="wrap-tablet">
+      <div class="slot-cap"><b>Tablet</b><span>1024 × 768</span><label>Signed in as <select id="who-tablet"></select></label></div>
+      <div class="slot" id="slot-tablet"><div class="device tablet" id="dev-tablet"><div class="screen" id="scr-tablet"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<script type="application/json" id="catalogue-data">{"version":"mock-2026-11-24","note":"MOCK data for development and demos only. Replace with the real catalogue supplied by Hinduja. Prices are illustrative list prices in INR.","testFields":["code","name","sampleType","tatHours","priceINR"],"sampleTypes":{"EDTA":"Lavender-top tube (EDTA whole blood)","Citrate":"Light-blue-top tube (sodium citrate plasma)","Fluoride":"Grey-top tube (sodium fluoride plasma)","Serum":"Gold-top SST tube (serum)","Urine":"Sterile urine container","Urine 24h":"24-hour urine collection jar","Stool":"Stool container","Swab":"Sterile swab","Sputum":"Sputum container","CSF":"Cerebrospinal fluid, sterile tube","Body fluid":"Body fluid, sterile container","Semen":"Semen container","Culture bottle":"Blood culture bottle","Tissue":"Tissue in formalin","Smear":"Glass slide smear","LBC vial":"Liquid-based cytology vial","FNA":"Fine-needle aspirate slides","Bedside":"Performed at bedside"},"categories":[{"code":"HEM","name":"Haematology","subcategories":[{"code":"HEM-RTN","name":"Routine Haematology","tests":[["HEM001","Complete Blood Count (CBC)","EDTA",4,350],["HEM002","Haemoglobin (Hb)","EDTA",2,120],["HEM003","Total Leucocyte Count (TLC)","EDTA",2,120],["HEM004","Differential Leucocyte Count (DLC)","EDTA",4,150],["HEM005","Platelet Count","EDTA",2,150],["HEM006","ESR (Westergren)","EDTA",2,120],["HEM007","Packed Cell Volume (PCV)","EDTA",2,120],["HEM008","RBC Count with Indices","EDTA",2,180],["HEM009","Absolute Eosinophil Count","EDTA",4,180],["HEM010","Reticulocyte Count","EDTA",6,250],["HEM011","Peripheral Smear Examination","EDTA",8,300]]},{"code":"HEM-COA","name":"Coagulation","tests":[["HEM012","Prothrombin Time (PT / INR)","Citrate",4,400],["HEM013","Activated Partial Thromboplastin Time (aPTT)","Citrate",4,450],["HEM014","Fibrinogen","Citrate",6,700],["HEM015","D-Dimer","Citrate",4,1400],["HEM016","Bleeding Time & Clotting Time","Bedside",1,150],["HEM017","Fibrin Degradation Products (FDP)","Citrate",24,1600]]},{"code":"HEM-IMH","name":"Immunohaematology","tests":[["HEM018","Blood Group & Rh Typing","EDTA",2,150],["HEM019","Direct Coombs Test (DCT)","EDTA",6,450],["HEM020","Indirect Coombs Test (ICT)","Serum",6,550]]},{"code":"HEM-SPL","name":"Special Haematology","tests":[["HEM021","Hb Electrophoresis (HPLC)","EDTA",48,1200],["HEM022","G6PD Quantitative","EDTA",24,800],["HEM023","Sickling Test","EDTA",24,300],["HEM024","Osmotic Fragility Test","EDTA",48,900]]}]},{"code":"BIO","name":"Clinical Biochemistry","subcategories":[{"code":"BIO-DIA","name":"Diabetes","tests":[["BIO001","Glucose Fasting (FBS)","Fluoride",2,100],["BIO002","Glucose Post Prandial (PPBS)","Fluoride",2,100],["BIO003","Glucose Random (RBS)","Fluoride",2,100],["BIO004","HbA1c (Glycated Haemoglobin)","EDTA",6,550],["BIO005","Oral Glucose Tolerance Test (OGTT)","Fluoride",4,400],["BIO006","Insulin Fasting","Serum",24,750],["BIO007","C-Peptide","Serum",24,1100]]},{"code":"BIO-KFT","name":"Kidney Function","tests":[["BIO008","Urea","Serum",3,180],["BIO009","Blood Urea Nitrogen (BUN)","Serum",3,180],["BIO010","Creatinine with eGFR","Serum",3,200],["BIO011","Uric Acid","Serum",3,200],["BIO012","Electrolytes (Na, K, Cl)","Serum",3,500],["BIO013","Calcium Total","Serum",3,220],["BIO014","Phosphorus","Serum",3,220],["BIO015","Magnesium","Serum",6,350],["BIO016","Urine Microalbumin","Urine",6,600]]},{"code":"BIO-LFT","name":"Liver Function","tests":[["BIO017","Bilirubin (Total, Direct, Indirect)","Serum",3,250],["BIO018","SGOT (AST)","Serum",3,180],["BIO019","SGPT (ALT)","Serum",3,180],["BIO020","Alkaline Phosphatase (ALP)","Serum",3,200],["BIO021","Gamma GT (GGT)","Serum",3,300],["BIO022","Total Protein, Albumin, A/G Ratio","Serum",3,250],["BIO023","Lactate Dehydrogenase (LDH)","Serum",4,400]]},{"code":"BIO-LIP","name":"Lipids","tests":[["BIO024","Total Cholesterol","Serum",3,180],["BIO025","Triglycerides","Serum",3,200],["BIO026","HDL Cholesterol","Serum",3,250],["BIO027","LDL Cholesterol (Direct)","Serum",3,350],["BIO028","Lipoprotein (a)","Serum",24,900],["BIO029","Apolipoprotein A1","Serum",24,800],["BIO030","Apolipoprotein B","Serum",24,800]]},{"code":"BIO-CAR","name":"Cardiac Markers","tests":[["BIO031","Troponin I (High Sensitivity)","Serum",2,1500],["BIO032","CK-MB","Serum",3,650],["BIO033","CPK Total","Serum",3,450],["BIO034","NT-proBNP","Serum",4,2400],["BIO035","hs-CRP","Serum",6,600],["BIO036","Homocysteine","Serum",24,1200]]},{"code":"BIO-PAN","name":"Pancreatic & Metabolic","tests":[["BIO037","Amylase","Serum",3,400],["BIO038","Lipase","Serum",3,500],["BIO039","Ammonia","EDTA",2,900],["BIO040","Lactate","Fluoride",2,700]]}]},{"code":"END","name":"Endocrinology & Immunoassay","subcategories":[{"code":"END-THY","name":"Thyroid","tests":[["END001","T3 Total","Serum",6,250],["END002","T4 Total","Serum",6,250],["END003","TSH (Ultrasensitive)","Serum",6,300],["END004","Free T3","Serum",6,400],["END005","Free T4","Serum",6,400],["END006","Anti-TPO Antibodies","Serum",24,1100],["END007","Anti-Thyroglobulin Antibodies","Serum",24,1200]]},{"code":"END-REP","name":"Reproductive Hormones","tests":[["END008","FSH","Serum",8,500],["END009","LH","Serum",8,500],["END010","Prolactin","Serum",8,550],["END011","Estradiol (E2)","Serum",8,650],["END012","Progesterone","Serum",8,650],["END013","Testosterone Total","Serum",8,700],["END014","Anti-Mullerian Hormone (AMH)","Serum",24,2200],["END015","Beta hCG (Quantitative)","Serum",4,750]]},{"code":"END-ADR","name":"Adrenal & Pituitary","tests":[["END016","Cortisol (Morning)","Serum",8,650],["END017","ACTH","EDTA",48,1500],["END018","Growth Hormone","Serum",24,900],["END019","Parathyroid Hormone (Intact PTH)","EDTA",24,1400]]},{"code":"END-VIT","name":"Vitamins & Iron Studies","tests":[["END020","Vitamin D (25-OH)","Serum",24,1400],["END021","Vitamin B12","Serum",24,1000],["END022","Folic Acid","Serum",24,950],["END023","Iron","Serum",6,300],["END024","Total Iron Binding Capacity (TIBC)","Serum",6,350],["END025","Ferritin","Serum",8,700],["END026","Transferrin Saturation","Serum",6,400]]},{"code":"END-TUM","name":"Tumour Markers","tests":[["END027","PSA Total","Serum",8,800],["END028","PSA Free","Serum",24,1000],["END029","CEA","Serum",8,900],["END030","CA-125","Serum",24,1100],["END031","CA 19-9","Serum",24,1200],["END032","CA 15-3","Serum",24,1200],["END033","Alpha Fetoprotein (AFP)","Serum",8,900]]}]},{"code":"MIC","name":"Microbiology","subcategories":[{"code":"MIC-CUL","name":"Culture & Sensitivity","tests":[["MIC001","Urine Culture & Sensitivity","Urine",72,700],["MIC002","Blood Culture & Sensitivity (Automated)","Culture bottle",120,1400],["MIC003","Sputum Culture & Sensitivity","Sputum",72,800],["MIC004","Stool Culture","Stool",72,800],["MIC005","Pus / Wound Culture & Sensitivity","Swab",72,800],["MIC006","Throat Swab Culture","Swab",72,700]]},{"code":"MIC-STN","name":"Stains & Microscopy","tests":[["MIC007","Gram Stain","Swab",4,250],["MIC008","AFB Stain (Ziehl-Neelsen)","Sputum",24,300],["MIC009","KOH Mount","Swab",4,300],["MIC010","India Ink Preparation","CSF",4,400]]},{"code":"MIC-MOL","name":"Molecular Diagnostics","tests":[["MIC011","TB GeneXpert (CBNAAT)","Sputum",24,2800],["MIC012","SARS-CoV-2 RT-PCR","Swab",24,500],["MIC013","HBV DNA Viral Load","EDTA",96,4500],["MIC014","HCV RNA Viral Load","EDTA",96,5000],["MIC015","HIV-1 RNA Viral Load","EDTA",96,5500]]}]},{"code":"SER","name":"Serology & Immunology","subcategories":[{"code":"SER-INF","name":"Infectious Serology","tests":[["SER001","HBsAg","Serum",6,400],["SER002","Anti-HCV Antibody","Serum",6,650],["SER003","HIV 1 & 2 Antibodies","Serum",6,500],["SER004","VDRL / RPR","Serum",6,250],["SER005","Widal Test","Serum",6,300],["SER006","Dengue NS1 Antigen","Serum",4,700],["SER007","Dengue IgG & IgM","Serum",6,900],["SER008","Malaria Antigen (Pf / Pv)","EDTA",2,450],["SER009","Typhoid IgM (Typhidot)","Serum",4,650],["SER010","Leptospira IgM","Serum",24,1100],["SER011","Scrub Typhus IgM","Serum",24,1200]]},{"code":"SER-AUT","name":"Autoimmune","tests":[["SER012","ANA (Immunofluorescence)","Serum",48,1400],["SER013","Anti-dsDNA","Serum",48,1500],["SER014","Rheumatoid Factor (RF)","Serum",6,400],["SER015","Anti-CCP Antibodies","Serum",24,1500],["SER016","ASO Titre","Serum",6,450],["SER017","C-Reactive Protein (Quantitative)","Serum",3,450],["SER018","Complement C3","Serum",24,800],["SER019","Complement C4","Serum",24,800]]},{"code":"SER-ALG","name":"Allergy","tests":[["SER020","Total IgE","Serum",24,800],["SER021","Allergy Panel - Food (20 allergens)","Serum",72,4500],["SER022","Allergy Panel - Inhalant (20 allergens)","Serum",72,4500]]}]},{"code":"CLP","name":"Clinical Pathology","subcategories":[{"code":"CLP-URN","name":"Urine","tests":[["CLP001","Urine Routine & Microscopy","Urine",2,150],["CLP002","Urine Pregnancy Test (hCG)","Urine",1,150],["CLP003","24-hour Urine Protein","Urine 24h",6,400],["CLP004","Urine Creatinine","Urine",3,200],["CLP005","Urine Protein : Creatinine Ratio","Urine",4,450],["CLP006","Urine Bence Jones Protein","Urine",24,500]]},{"code":"CLP-STL","name":"Stool","tests":[["CLP007","Stool Routine & Microscopy","Stool",4,200],["CLP008","Stool Occult Blood","Stool",4,250],["CLP009","Stool Reducing Substances","Stool",4,250]]},{"code":"CLP-FLD","name":"Body Fluids","tests":[["CLP010","CSF Analysis (Cell count, Protein, Sugar)","CSF",4,800],["CLP011","Pleural Fluid Analysis","Body fluid",4,800],["CLP012","Ascitic Fluid Analysis","Body fluid",4,800],["CLP013","Synovial Fluid Analysis","Body fluid",4,800],["CLP014","Semen Analysis","Semen",4,500]]}]},{"code":"HIS","name":"Histopathology & Cytology","subcategories":[{"code":"HIS-HPE","name":"Histopathology","tests":[["HIS001","Biopsy - Small Specimen","Tissue",96,1500],["HIS002","Biopsy - Medium Specimen","Tissue",120,2500],["HIS003","Biopsy - Large / Radical Specimen","Tissue",168,4500],["HIS004","Frozen Section","Tissue",1,4000],["HIS005","Immunohistochemistry (per marker)","Tissue",120,2500]]},{"code":"HIS-CYT","name":"Cytology","tests":[["HIS006","PAP Smear (Conventional)","Smear",72,600],["HIS007","Liquid Based Cytology (LBC)","LBC vial",72,1500],["HIS008","Fine Needle Aspiration Cytology (FNAC)","FNA",48,1200],["HIS009","Body Fluid Cytology","Body fluid",48,900]]}]}],"bundles":[{"code":"PKG01","name":"Basic Health Check","price":1499,"tests":["HEM001","BIO001","BIO010","BIO017","BIO018","BIO019","BIO024","BIO025","BIO026","END003","CLP001"]},{"code":"PKG02","name":"Comprehensive Health Check","price":3999,"tests":["HEM001","HEM006","BIO001","BIO004","BIO008","BIO010","BIO011","BIO012","BIO017","BIO018","BIO019","BIO020","BIO022","BIO024","BIO025","BIO026","BIO027","END001","END002","END003","END020","END021","END023","CLP001"]},{"code":"PKG03","name":"Diabetes Care Profile","price":1799,"tests":["BIO001","BIO002","BIO004","BIO010","BIO016","BIO024","BIO025","BIO026","BIO027","CLP001"]},{"code":"PKG04","name":"Cardiac Risk Profile","price":3499,"tests":["BIO024","BIO025","BIO026","BIO027","BIO028","BIO029","BIO030","BIO035","BIO036"]},{"code":"PKG05","name":"Thyroid Profile (Total)","price":599,"tests":["END001","END002","END003"]},{"code":"PKG06","name":"Fever Panel","price":1999,"tests":["HEM001","HEM006","SER008","SER006","SER005","SER017","CLP001"]},{"code":"PKG07","name":"Pre-operative Profile","price":2499,"tests":["HEM001","HEM012","HEM013","HEM018","BIO003","BIO010","BIO012","SER001","SER002","SER003","CLP001"]},{"code":"PKG08","name":"Antenatal Profile","price":3299,"tests":["HEM001","HEM018","HEM020","HEM021","BIO003","END003","SER001","SER002","SER003","SER004","CLP001"]},{"code":"PKG09","name":"Women's Wellness Profile","price":3499,"tests":["HEM001","BIO001","BIO013","END003","END020","END021","END025","HIS006","CLP001"]},{"code":"PKG10","name":"Senior Citizen Profile","price":3999,"tests":["HEM001","HEM006","BIO001","BIO004","BIO008","BIO010","BIO012","BIO017","BIO018","BIO019","BIO024","BIO025","BIO026","BIO027","END003","END020","END021","CLP001"]}]}</script>
+<script>
+"use strict";
+/* ================= constants & utils ================= */
+const RAW = JSON.parse(document.getElementById('catalogue-data').textContent);
+const KEY = 'pathdesk.proto.v2';
+const DOMAIN = 'hindujahospital.com';
+const DEV = { phone:{w:414,h:868}, tablet:{w:1060,h:804} };
+const TUBE = { EDTA:{c:'#7c5cc4',cap:'Lavender top'}, Citrate:{c:'#2f8fc9',cap:'Light-blue top'}, Fluoride:{c:'#7b8189',cap:'Grey top'}, Serum:{c:'#c99400',cap:'Gold top'} };
+const S1='#0b8f83', S2='#c9790a';
+const DAY = 864e5;
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const pad = n => String(n).padStart(2,'0');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nf = new Intl.NumberFormat('en-IN');
+const inr = n => '₹' + nf.format(Math.round(n));
+const sod = ms => { const d = new Date(ms); d.setHours(0,0,0,0); return d.getTime(); };
+const addDays = (ms,n) => { const d = new Date(ms); d.setDate(d.getDate()+n); return d.getTime(); };
+const dkey = ms => { const d = new Date(ms); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); };
+const fmtD = ms => { const d = new Date(ms); return pad(d.getDate())+'-'+MON[d.getMonth()]+'-'+d.getFullYear(); };
+const fmtDs = ms => { const d = new Date(ms); return pad(d.getDate())+' '+MON[d.getMonth()]; };
+const fmtT = ms => { const d = new Date(ms); return pad(d.getHours())+':'+pad(d.getMinutes()); };
+const fmtDT = ms => fmtD(ms)+' '+fmtT(ms);
+const pct = (a,b) => b ? Math.round(a/b*100) : 0;
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const initials = n => n.replace(/^Dr\.\s*/,'').split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase();
+const mask = m => m ? m.slice(0,2)+'XXXXXX'+m.slice(-2) : '';
+
+function rng(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+
+const ICON = {
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.7.8 2.8 2.5 3.1 5.2"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4.2 4-6.5 8-6.5s7.2 2.3 8 6.5"/>',
+  list:'<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  table:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/>',
+  flask:'<path d="M9 3h6M10 3v6l-5.5 9.5A1.6 1.6 0 0 0 5.9 21h12.2a1.6 1.6 0 0 0 1.4-2.5L14 9V3"/><path d="M7.5 15h9"/>',
+  steth:'<path d="M5 3v6a5 5 0 0 0 10 0V3"/><path d="M10 14v2a5 5 0 0 0 10 0v-2"/><circle cx="20" cy="12" r="2"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  more:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+  back:'<path d="m15 18-6-6 6-6"/>',
+  chev:'<path d="m9 18 6-6-6-6"/>',
+  down:'<path d="m6 9 6 6 6-6"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/>',
+  edit:'<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/>',
+  ban:'<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>',
+  userplus:'<circle cx="10" cy="8" r="4"/><path d="M2.5 21c.8-4.2 3.8-6.5 7.5-6.5 1.6 0 3 .4 4.2 1.2M19 14v6M16 17h6"/>',
+  out:'<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/>',
+  download:'<path d="M12 4v11M7 10l5 5 5-5M4 20h16"/>',
+  bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+};
+const ic = (n,cls='') => `<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n]||''}</svg>`;
+let LOGO_N = 0;
+function logo(){ const id='lg'+(++LOGO_N); return document.getElementById('logoSrc').outerHTML.replace(/id="logoSrc"/,'').replace(/lg0/g,id); }
+
+/* ================= catalogue ================= */
+function buildCat(raw){
+  return {
+    cats: raw.categories.map(c=>({code:c.code,name:c.name,active:true,subs:c.subcategories.map(s=>({code:s.code,name:s.name,active:true,tests:s.tests.map(t=>({code:t[0],name:t[1],sample:t[2],tat:t[3],price:t[4],active:true}))}))})),
+    bundles: raw.bundles.map(b=>({code:b.code,name:b.name,price:b.price,tests:b.tests.slice(),active:true}))
+  };
+}
+
+/* ================= seed data ================= */
+function seed(){
+  const R = rng(20261124);
+  const rint = (a,b) => a + Math.floor(R()*(b-a+1));
+  const pick = a => a[Math.floor(R()*a.length)];
+  const wpick = o => { const e=Object.entries(o); let r=R()*e.reduce((s,[,w])=>s+w,0); for(const [k,w] of e){ if((r-=w)<0) return k; } return e[e.length-1][0]; };
+  const now = Date.now(), t0 = sod(now);
+  const cat = buildCat(RAW);
+  const T0 = {}, B0 = {};
+  cat.cats.forEach(c=>c.subs.forEach(s=>s.tests.forEach(t=>T0[t.code]=t)));
+  cat.bundles.forEach(b=>B0[b.code]=b);
+  const ALL = Object.keys(T0);
+
+  const users = [
+    {id:'u1',name:'Sunita Pawar',email:'sunita.pawar@'+DOMAIN,role:'staff',title:'Registration desk',active:true},
+    {id:'u2',name:'Ajay Shinde',email:'ajay.shinde@'+DOMAIN,role:'staff',title:'Lab technician',active:true},
+    {id:'u3',name:'Rohan Desai',email:'rohan.desai@'+DOMAIN,role:'staff',title:'Registration desk',active:true},
+    {id:'u5',name:'Kavita Nair',email:'kavita.nair@'+DOMAIN,role:'staff',title:'Phlebotomist',active:true},
+    {id:'u4',name:'Dr. Meera Iyer',email:'meera.iyer@'+DOMAIN,role:'admin',title:'Lab manager',active:true},
+  ];
+  const DOCS = [['d1','Dr. A. Kulkarni','Endocrinology',6],['d2','Dr. S. Bhatt','General Medicine',8],['d3','Dr. R. Fernandes','Cardiology',4],['d4','Dr. P. Menon','Obstetrics & Gynaecology',4],['d5','Dr. N. Shah','Paediatrics',3],['d6','Dr. V. Rao','Nephrology',2.5],['d7','Dr. K. Deshmukh','Pulmonology',2],['d8','Dr. M. Vaidya','Gastroenterology',2.5],['d9','Dr. T. Iyengar','Dermatology',1.2],['d10','Dr. L. Pinto','Orthopaedics',1.5]];
+  const doctors = DOCS.map(([id,name,spec])=>({id,name,spec,mob:'98'+rint(20000000,99999999),verified:true,active:true}));
+  doctors.push({id:'d11',name:'Dr. Ramesh Gupta',spec:'',mob:'',verified:false,active:true});
+  const DW = Object.fromEntries(DOCS.map(d=>[d[0],d[3]]));
+
+  const MF = ['Rahul','Amit','Suresh','Vikram','Arjun','Rajesh','Rohit','Sanjay','Prakash','Nikhil','Aditya','Joseph','Manoj','Kiran','Harish','Zubin','Yash','Siddharth','Anil','Ganesh'];
+  const FF = ['Priya','Anjali','Sneha','Pooja','Neha','Kavya','Lakshmi','Meenal','Asha','Lata','Rekha','Shruti','Divya','Aarti','Nandini','Grace','Swati','Ishita','Leena','Radhika'];
+  const SN = ['Mehta','Patil','Kulkarni','Shinde',"D'Souza",'Iyer','Reddy','Gupta','Nair','Kapoor','Jain','Bhosale','Chavan','Pillai','Sawant','Pereira','Agarwal','Deshpande','Rane','Kamat','Thakur','Mistry','Bhatia','Gokhale'];
+  const BLD = ['Sea Breeze CHS','Sai Darshan','Shanti Niwas','Palm Court','Gulmohar Apts','Silver Oak','Krishna Kunj','Jasmine Towers','Ocean View','Laxmi Sadan'];
+  const LOC = [['Mahim','400016'],['Dadar West','400028'],['Bandra West','400050'],['Matunga','400019'],['Worli','400018'],['Khar West','400052'],['Prabhadevi','400025'],['Sion','400022'],['Santacruz West','400054']];
+  const P = [];
+  for(let i=0;i<175;i++){
+    const g = R()<0.5?'M':'F';
+    const fam = i>20 && R()<0.07 ? P[rint(0,P.length-1)] : null;
+    const fn = pick(g==='M'?MF:FF), ln = fam ? fam.ln : pick(SN);
+    const band = R(); const age = band<0.07 ? rint(1,12) : band<0.11 ? rint(13,17) : band<0.3 ? rint(18,30) : band<0.55 ? rint(31,45) : band<0.8 ? rint(46,60) : rint(61,86);
+    const dob = addDays(t0, -(age*365 + rint(0,360)));
+    const loc = R()<0.82 ? pick(LOC) : null;
+    P.push({ id:'p'+(1000+i), fn, ln, g, dob, est:R()<0.35, mob: fam ? fam.mob : pick(['98','97','99','93','90','88','82','70'])+rint(10000000,99999999),
+      email: R()<0.5 ? (fn+'.'+ln).toLowerCase().replace(/[^a-z.]/g,'')+rint(10,99)+'@'+pick(['gmail.com','yahoo.co.in','outlook.com']) : '',
+      uhid: R()<0.7 ? 'MH-'+String(rint(40000,99999)).padStart(7,'0') : '',
+      addr: loc ? {line:rint(1,40)+', '+pick(BLD)+', '+loc[0], city:'Mumbai', state:'Maharashtra', pin:loc[1]} : {line:rint(1,40)+', '+pick(BLD), city:pick(['Thane','Navi Mumbai','Pune']), state:'Maharashtra', pin:pick(['400601','400703','411001'])},
+      consent:null, at:null, by:null });
+  }
+  const HW = {7:1,8:6,9:10,10:11,11:9,12:7,13:5,14:6,15:6,16:5,17:4,18:3,19:1};
+  const BW = {PKG01:5,PKG05:6,PKG03:4,PKG02:3,PKG06:3,PKG04:2,PKG07:2,PKG08:1.5,PKG09:1.5,PKG10:2};
+  const TWb = {HEM001:10,BIO001:8,BIO004:7,END003:7,BIO024:4,END020:6,END021:4,BIO010:6,CLP001:6,SER017:3,SER006:2,HEM006:3,BIO017:3,BIO019:3,BIO002:3,END025:2,SER001:2,HEM012:2,BIO031:1.5,END027:1.5,MIC001:2,BIO012:2,END004:2,END005:2,BIO035:1.5,SER008:1.5};
+  const NOTES = ['Fasting since 10 pm.','Known T2DM, on metformin.','Pre-op, surgery scheduled tomorrow.','Fever for 3 days.','Follow-up after 3 months.','On thyroxine 50 mcg.','Pregnant, 12 weeks.','Hypertensive, on amlodipine.'];
+  const STAFFW = {u1:4,u2:3,u3:2.5,u5:1.2,u4:0.4};
+  const O = [];
+  for(let k=44;k>=0;k--){
+    const day0 = addDays(t0,-k); const dow = new Date(day0).getDay();
+    const n = Math.max(3, Math.round((15 + (44-k)*0.13 + (R()*8-4)) * [0.45,1,1.02,1,1,1.06,0.8][dow]));
+    const fever = k < 21;
+    const TW = Object.assign({}, TWb, fever ? {SER006:7,SER007:3,SER005:3,SER008:3} : {});
+    const BWd = Object.assign({}, BW, fever ? {PKG06:7} : {});
+    const times = [];
+    for(let j=0;j<n;j++){ const d = new Date(day0); d.setHours(+wpick(HW), rint(0,59), rint(0,59), 0); if(d.getTime() < now - 4*60e3) times.push(d.getTime()); }
+    times.sort((a,b)=>a-b);
+    times.forEach((at,j)=>{
+      const p = P[Math.floor(Math.pow(R(),1.5)*P.length)];
+      const items = []; const inB = c => items.some(x=>x.t==='b'&&x.ts.includes(c));
+      if(R()<0.38){ let b = wpick(BWd); if(p.g==='M'&&(b==='PKG08'||b==='PKG09')) b='PKG01'; if(p.g==='F'&&b==='PKG08'&&(addDays(t0,0)-p.dob)/DAY/365>45) b='PKG09'; items.push({t:'b',c:b,p:B0[b].price,ts:B0[b].tests.slice()}); }
+      const m = items.length ? rint(0,2) : rint(1,4);
+      for(let q=0;q<m;q++){
+        const c = R()<0.82 ? wpick(TW) : pick(ALL);
+        if(p.g==='M'&&/^HIS00[67]$/.test(c)) continue;
+        if(p.g==='F'&&/^END02[78]$/.test(c)) continue;
+        if(items.some(x=>x.c===c)||inB(c)) continue;
+        items.push({t:'t',c,p:T0[c].price});
+      }
+      if(!items.length) items.push({t:'t',c:'HEM001',p:T0.HEM001.price});
+      const by = wpick(STAFFW);
+      const doc = R()<0.12 ? null : (R()<0.01 ? 'd11' : wpick(DW));
+      const o = { id:'o'+at.toString(36)+j, no:'', pid:p.id, at, date:dkey(at), doc, pri:R()<0.12?'U':'R', notes:R()<0.3?pick(NOTES):'', items, by, st:'active', ver:1,
+        email: (k===0 && R()<0.22) ? {st:'draft',type:'new'} : {st:'sent',type:'new',at:at+rint(40,240)*1000,n:1} };
+      if(!p.at){ p.at = at - rint(60,300)*1000; p.by = by; p.consent = p.at; }
+      O.push(o);
+    });
+  }
+  P.forEach(p=>{ if(!p.at){ p.at = addDays(t0,-rint(50,140)) + rint(9,17)*36e5; p.by = pick(['u1','u2','u3']); p.consent = p.at; } });
+  const seqs = {}; O.forEach(o=>{ seqs[o.date]=(seqs[o.date]||0)+1; o.no = 'HL-'+o.date.replace(/-/g,'')+'-'+String(seqs[o.date]).padStart(4,'0'); });
+
+  const settings = { email:{ to:['pathlab.orders@'+DOMAIN], cc:['lab.manager@'+DOMAIN], domains:[DOMAIN] }, lab:{name:'Hinduja Hospital, Mahim — Pathology Lab', prefix:'HL'} };
+  const audit = [], emailLog = [];
+  const A = (at,actor,action,entity,eid,text) => audit.push({id:'a'+audit.length, at, actor, action, entity, eid, text});
+  O.forEach(o=>{
+    if(o.at < now - 3*DAY) {} else if(o.email.st==='sent') emailLog.push({at:o.email.at, oid:o.id, no:o.no, type:'new', to:settings.email.to.concat(settings.email.cc).join(', '), st:'sent', n:1, note:''});
+    const r = R();
+    if(r < 0.018 && o.at < now - 2*36e5){ o.st='cancelled'; o.cancelReason = pick(['Duplicate entry','Patient left before sample collection','Wrong patient selected']); o.email={st:'sent',type:'cancelled',at:o.at+20*60e3,n:1}; A(o.at+18*60e3,o.by,'order.cancel','order',o.id,`Cancelled ${o.no}: ${o.cancelReason}`); }
+    else if(r < 0.045 && o.at < now - 2*36e5){ const add = ['BIO004','END020','SER017','END021'].find(c=>!flatItems(o.items).some(x=>x.c===c)); if(add){ o.hist=[{ver:1,items:o.items.map(x=>({...x,ts:x.ts&&x.ts.slice()})),at:o.at,by:o.by,reason:''}]; o.items.push({t:'t',c:add,p:T0[add].price}); o.ver=2; const why='Doctor added '+T0[add].name+' on call'; o.hist.push({ver:2,at:o.at+45*60e3,by:o.by,reason:why}); o.email={st:'sent',type:'amended',at:o.at+46*60e3,n:1}; A(o.at+45*60e3,o.by,'order.amend','order',o.id,`Amended ${o.no} to v2: ${why}`); } }
+  });
+  const recent = O.filter(o=>o.at > now - 30*36e5 && o.st==='active' && o.email.st==='sent');
+  recent.slice(-9,-7).forEach(o=>{ o.email = {st:'failed',type:'new',n:3,err:'SMTP 421: service temporarily unavailable'}; for(let n=1;n<=3;n++) emailLog.push({at:o.at+n*90e3, oid:o.id, no:o.no, type:'new', to:settings.email.to.concat(settings.email.cc).join(', '), st:'failed', n, note:'SMTP 421: service temporarily unavailable'}); });
+  A(addDays(now,-3),'u4','test.update','test','END020','Changed price of Vitamin D (25-OH) from ₹1,500 to ₹1,400');
+  A(addDays(now,-6),'u4','bundle.update','bundle','PKG06','Added Typhoid IgM to Fever Panel review list');
+  A(addDays(now,-9),'u4','user.create','user','u5','Created user Kavita Nair (Staff)');
+  A(addDays(now,-12),'u4','settings.update','settings','email','Added lab.manager@'+DOMAIN+' to CC');
+  return { v:1, day:dkey(now), users, doctors, patients:P, orders:O, cat, settings, audit, emailLog, lastNew:null, lastEvent:'Demo data loaded' };
+}
+
+/* ================= store ================= */
+let S, IX = {};
+function load(){
+  try { const s = JSON.parse(localStorage.getItem(KEY)||'null'); if(s && s.v===1 && s.day===dkey(Date.now())) { S = s; return; } } catch(e){}
+  S = seed();
+}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+function reindex(){
+  const T={},C={},SB={},B={},P={},PO={},D={},U={},first={};
+  S.cat.cats.forEach(c=>{ C[c.code]=c; c.subs.forEach(s=>{ SB[s.code]=s; s.tests.forEach(t=>{ T[t.code]={t,c,s}; }); }); });
+  S.cat.bundles.forEach(b=>B[b.code]=b);
+  S.patients.forEach(p=>P[p.id]=p);
+  S.orders.forEach(o=>{ (PO[o.pid] = PO[o.pid] || []).push(o); });
+  Object.values(PO).forEach(a=>a.sort((x,y)=>y.at-x.at));
+  S.doctors.forEach(x=>D[x.id]=x); S.users.forEach(u=>U[u.id]=u);
+  S.orders.slice().sort((a,b)=>a.at-b.at).forEach(o=>{ if(o.st!=='cancelled' && !first[o.pid]) first[o.pid]=o.id; });
+  IX = {T,C,SB,B,P,PO,D,U,first};
+}
+function audit(d,action,entity,eid,text){ S.audit.push({id:uid('a'),at:Date.now(),actor:d.user,action,entity,eid,text}); }
+
+/* ================= domain helpers ================= */
+const isActiveTest = c => { const x = IX.T[c]; return x && x.t.active && x.s.active && x.c.active; };
+const tName = c => IX.T[c] ? IX.T[c].t.name : c;
+const bName = c => IX.B[c] ? IX.B[c].name : c;
+const pName = p => p ? (p.fn+' '+(p.ln||'')).trim() : 'Unknown';
+const uName = id => IX.U && IX.U[id] ? IX.U[id].name : id;
+const docName = id => id && IX.D[id] ? IX.D[id].name : 'Self / walk-in';
+function flatItems(items){
+  const out=[], seen=new Set();
+  items.forEach(x=>{ if(x.t==='b'){ (x.ts || (IX.B && IX.B[x.c] ? IX.B[x.c].tests : [])).forEach(c=>{ if(!seen.has(c)){ seen.add(c); out.push({c,via:x.c}); } }); } });
+  items.forEach(x=>{ if(x.t==='t' && !seen.has(x.c)){ seen.add(x.c); out.push({c:x.c,via:null}); } });
+  return out;
+}
+const priceOf = x => x.p != null ? x.p : (x.t==='b' ? IX.B[x.c].price : IX.T[x.c].t.price);
+const valueOf = items => items.reduce((s,x)=>s+priceOf(x),0);
+function samplesOf(items){ const m={}; flatItems(items).forEach(f=>{ const s = IX.T[f.c] ? IX.T[f.c].t.sample : '?'; m[s]=(m[s]||0)+1; }); return m; }
+function ageDays(p,ref){ return ((ref||Date.now()) - p.dob)/DAY; }
+function ageText(p,ref){ const d=ageDays(p,ref); if(d<31) return Math.floor(d)+' d'; if(d<365) return Math.floor(d/30.44)+' mo'; return Math.floor(d/365.25)+' y'; }
+const gText = g => ({M:'Male',F:'Female',O:'Other'})[g]||g;
+const tubeChip = s => `<span class="tube" style="--c:${TUBE[s]?TUBE[s].c:'#6f8a83'}">${esc(s)}</span>`;
+function emailChip(o){ const e=o.email||{}; return e.st==='sent' ? `<span class="chip ok">${ic('check','sm')}Email sent</span>` : e.st==='failed' ? `<span class="chip bad">Email failed</span>` : `<span class="chip warn">Email not sent</span>`; }
+function statusChips(o){ return (o.st==='cancelled'?'<span class="chip bad">Cancelled</span>':'') + (o.pri==='U'?'<span class="chip urg">Urgent</span>':'') + (o.ver>1?`<span class="chip">v${o.ver}</span>`:''); }
+function canEdit(u,o){ return o.st==='active' && (u.role==='admin' || (o.by===u.id && o.date===dkey(Date.now()))); }
+
+/* ================= devices ================= */
+const devices = {};
+function makeDevice(key, user, route){
+  document.getElementById('scr-'+key).classList.add(key==='phone'?'ph':'tb');
+  const d = { key, mode:key, user, route, p:{}, hist:[], modal:null, toast:null, q:'', form:null, draft:null, screen:document.getElementById('scr-'+key), el:document.getElementById('dev-'+key), scale:1, lastKey:'' };
+  devices[key] = d;
+  bindDevice(d);
+  return d;
+}
+const me = d => IX.U[d.user];
+function defaultRoute(u){ return u.role==='admin' ? 'dashboard' : 'home'; }
+function go(d, route, p={}, opt={}){
+  if(opt.root) d.hist = [];
+  else if(!opt.replace) d.hist.push({route:d.route, p:d.p});
+  d.route = route; d.p = p; d.modal = null; render(d);
+  const sc = d.screen.querySelector('.scroll'); if(sc && !opt.keepScroll) sc.scrollTop = 0;
+}
+function back(d){
+  if(d.route==='order' && d.mode==='phone' && d.draft && d.draft.step==='details'){ d.draft.step='pick'; render(d); return; }
+  const h = d.hist.pop(); if(!h) return; d.route = h.route; d.p = h.p; d.modal = null; render(d);
+}
+function toast(d,msg,kind=''){ d.toast = {msg,kind,id:Date.now()}; const id=d.toast.id; renderToast(d); setTimeout(()=>{ if(d.toast && d.toast.id===id){ d.toast=null; renderToast(d); } }, 3200); }
+function renderToast(d){ const old=d.screen.querySelector('.toast'); if(old) old.remove(); if(d.toast){ d.screen.insertAdjacentHTML('beforeend', `<div class="toast ${d.toast.kind}" role="status">${esc(d.toast.msg)}</div>`); } }
+function region(d,name,html){ const r=d.screen.querySelector(`[data-region="${name}"]`); if(r) r.innerHTML = html; }
+function commit(actor, event){
+  if(event) S.lastEvent = event + ' · ' + (actor ? (actor.key==='phone'?'Phone':'Tablet') : '') + ' · ' + fmtT(Date.now());
+  save(); reindex(); updateSync();
+  Object.values(devices).forEach(d=>{
+    if(d===actor) { render(d); return; }
+    if(d.modal || d.screen.contains(document.activeElement)) { d.stale = true; return; }
+    render(d);
+  });
+}
+function updateSync(){ const el=document.getElementById('sync'); if(el) el.textContent = `${nf.format(S.orders.length)} orders · ${nf.format(S.patients.length)} patients · ${S.lastEvent||''}`; }
+
+function render(d){
+  const sc = d.screen.querySelector('.scroll');
+  const rk = d.route + JSON.stringify(d.p||{});
+  const keep = sc && d.lastKey === rk ? sc.scrollTop : 0;
+  const keepInner = [...d.screen.querySelectorAll('[data-keep]')].map(e=>[e.dataset.keep,e.scrollTop]);
+  d.stale = false;
+  const u = d.user && IX.U[d.user];
+  let html = statusBar(d);
+  if(!u || !u.active){ d.user = null; html += viewLogin(d); }
+  else html += shell(d,u);
+  if(d.modal) html += modalView(d);
+  html += '<div class="tip" hidden></div>';
+  d.screen.innerHTML = html;
+  renderToast(d);
+  const sc2 = d.screen.querySelector('.scroll'); if(sc2) sc2.scrollTop = keep;
+  keepInner.forEach(([k,t])=>{ const e=d.screen.querySelector(`[data-keep="${k}"]`); if(e && d.lastKey===rk) e.scrollTop=t; });
+  d.lastKey = rk;
+  syncWho(d);
+}
+function statusBar(d){
+  const t = fmtT(Date.now());
+  const sig = '<span class="ico"><i style="width:3px;height:5px"></i><i style="width:3px;height:7px"></i><i style="width:3px;height:9px"></i><i style="width:3px;height:11px"></i></span>';
+  const bat = '<span class="ico"><i style="width:22px;height:11px;border-radius:3px;opacity:.9"></i></span>';
+  return d.mode==='phone' ? `<div class="sbar"><span class="sb-time">${t}</span><span class="ico">${sig}${bat}</span></div>` : `<div class="sbar"><span class="sb-time">${t}</span><span class="ico">Wi-Fi 100% ${bat}</span></div>`;
+}
+
+/* ---------- navigation model ---------- */
+function navFor(u){
+  return u.role==='admin'
+    ? [['dashboard','Dashboard','chart'],['home','Patients','users'],['orders','Orders','list'],['reports','Reports','table'],['catalogue','Catalogue','flask'],['doctors','Doctors','steth'],['users','Users','user'],['settings','Settings','gear'],['audit','Audit log','clock']]
+    : [['home','Patients','users'],['orders','My orders','list']];
+}
+function tabsFor(u){ return u.role==='admin' ? [['dashboard','Dashboard','chart'],['home','Patients','users'],['orders','Orders','list'],['reports','Reports','table'],['more','More','more']] : [['home','Patients','users'],['orders','My orders','list'],['more','Account','user']]; }
+const ROOTS = {dashboard:1,home:1,orders:1,reports:1,catalogue:1,doctors:1,users:1,settings:1,audit:1,more:1};
+const NAV_OF = {patient:'home',patientForm:'home',order:'home',orderView:'orders',report:'reports'};
+
+function shell(d,u){
+  const v = (VIEWS[d.route] || VIEWS.home)(d,u);
+  const navKey = NAV_OF[d.route] || d.route;
+  const showBack = !ROOTS[d.route] && d.hist.length > 0;
+  const backBtn = `<button class="iconbtn" data-act="back" aria-label="Back">${ic('back')}</button>`;
+  const title = `<h1>${v.title}${v.sub?`<span class="sub">${v.sub}</span>`:''}</h1>`;
+  const body = v.full ? `<div class="scroll full">${v.body}</div>` : `<div class="scroll">${v.body}</div>`;
+  if(d.mode==='phone'){
+    const lead = showBack ? backBtn : `<span class="lead-logo">${logo()}</span>`;
+    const tabs = v.hideTabs ? '' : `<nav class="tabbar">${tabsFor(u).map(([r,l,i])=>`<button data-act="nav" data-arg="${r}" class="${(navKey===r||(r==='more'&&['catalogue','doctors','users','settings','audit'].includes(navKey)))?'on':''}">${ic(i)}<span>${l}</span></button>`).join('')}</nav>`;
+    return `<div class="app ph"><header class="top">${lead}${title}${v.actions||`<button class="avatar" data-act="nav" data-arg="more" aria-label="Account">${initials(u.name)}</button>`}</header>${body}${v.footer||''}${tabs}</div>`;
+  }
+  const nav = navFor(u).map(([r,l,i])=>`<button data-act="nav" data-arg="${r}" class="${navKey===r?'on':''}">${ic(i)}<span>${l}</span></button>`).join('');
+  return `<div class="app tb"><aside class="side"><div class="brand">${logo()}<div><b>PathDesk</b><span>Hinduja Hospital · Pathology</span></div></div><nav>${nav}</nav><div class="me"><span class="avatar">${initials(u.name)}</span><div><div>${esc(u.name)}</div><small>${u.role==='admin'?'Admin':'Staff'} · ${esc(u.title||'')}</small></div><button data-act="logout" aria-label="Sign out" title="Sign out">${ic('out')}</button></div></aside><section class="main"><header class="top">${showBack?backBtn:''}${title}${v.actions||''}</header>${body}${v.footer||''}</section></div>`;
+}
+
+/* ================= views ================= */
+const VIEWS = {};
+
+function viewLogin(d){
+  const demo = S.users.map(u=>`<button class="demo" data-act="login" data-arg="${u.id}" ${u.active?'':'disabled'}><span class="avatar">${initials(u.name)}</span><span class="grow"><b>${esc(u.name)}</b><br><span class="small muted">${u.role==='admin'?'Admin':'Staff'} · ${esc(u.title)}${u.active?'':' · Deactivated'}</span></span>${ic('chev')}</button>`).join('');
+  return `<div class="login"><div class="lbrand">${logo()}<b>PathDesk</b><span>Hinduja Hospital · Pathology Lab</span></div>
+  <div class="card"><div class="field"><label for="${d.key}-lem">Email</label><input class="inp" id="${d.key}-lem" type="email" placeholder="name@${DOMAIN}" autocomplete="off"></div>
+  <div class="field"><label for="${d.key}-lpw">Password</label><input class="inp" id="${d.key}-lpw" type="password" placeholder="••••••••"></div>
+  <button class="btn pri block" data-act="loginForm">Sign in</button><button class="link small" data-act="toastMsg" data-arg="A password reset link would be emailed to you.">Forgot password?</button></div>
+  <div class="card"><div class="flabel">Demo accounts — tap to sign in</div>${demo}</div></div>`;
+}
+
+/* ---- Home / patient search ---- */
+VIEWS.home = (d,u) => {
+  const t0 = sod(Date.now());
+  const todays = S.orders.filter(o=>o.at>=t0 && (u.role==='admin' || o.by===u.id)).sort((a,b)=>b.at-a.at);
+  const act = todays.filter(o=>o.st==='active');
+  const tests = act.reduce((s,o)=>s+flatItems(o.items).length,0);
+  const pend = todays.filter(o=>o.email.st!=='sent').length;
+  const hour = new Date().getHours();
+  const greet = hour<12?'Good morning':hour<17?'Good afternoon':'Good evening';
+  const body = `
+    ${d.mode==='phone'?`<div class="hello">${greet}, ${esc(u.name.replace(/^Dr\.\s*/,'').split(' ')[0])}</div><p class="muted small" style="margin:0 0 14px">${fmtD(Date.now())} · ${esc(S.settings.lab.name)}</p>`:''}
+    <div class="row" style="align-items:stretch">
+      <div class="search grow">${ic('search')}<input class="inp" id="${d.key}-psearch" data-in="q" value="${esc(d.q)}" placeholder="Mobile, UHID or patient name" autocomplete="off" inputmode="search" aria-label="Search patients"></div>
+      ${d.mode==='tablet'?`<button class="btn pri" data-act="newPatient">${ic('userplus')}New patient</button>`:''}
+    </div>
+    <div data-region="pres">${patientResults(d)}</div>
+    ${d.mode==='phone'?`<button class="btn pri block" style="margin-top:12px" data-act="newPatient">${ic('userplus')}Register new patient</button>`:''}
+    <div class="sec">${u.role==='admin'?'Today across the lab':'My work today'}</div>
+    <div class="stats3"><div class="mini"><b class="num">${act.length}</b><span>Orders</span></div><div class="mini"><b class="num">${tests}</b><span>Tests</span></div><div class="mini"><b class="num">${pend}</b><span>Emails not sent</span></div></div>
+    <div class="sec">${u.role==='admin'?'Today’s orders':'My orders today'}<span class="r"><button class="link" data-act="nav" data-arg="orders">View all</button></span></div>
+    ${orderList(d, todays.slice(0, 8), u.role==='admin')}`;
+  return { title: d.mode==='phone' ? 'Patients' : 'Patients', sub: d.mode==='tablet' ? 'Search by mobile number, UHID or name' : '', body };
+};
+function patientResults(d){
+  const q = (d.q||'').trim(); if(!q) return '';
+  const ql = q.toLowerCase(), digits = q.replace(/\D/g,'');
+  const res = S.patients.filter(p=>{
+    if(digits.length>=2 && /^[\d\s+-]+$/.test(q)) return p.mob.includes(digits);
+    if(p.uhid && p.uhid.toLowerCase().includes(ql)) return true;
+    const full = (p.fn+' '+p.ln).toLowerCase();
+    return full.startsWith(ql) || (p.ln||'').toLowerCase().startsWith(ql) || full.includes(' '+ql);
+  }).slice(0,12);
+  if(!res.length) return `<div class="list" style="margin-top:10px"><div class="empty">No patient matches “${esc(q)}”.<br><button class="btn sm pri" style="margin-top:10px" data-act="newPatient">${ic('userplus','sm')}Register new patient</button></div></div>`;
+  return `<div class="list" style="margin-top:10px">${res.map(p=>{ const os=IX.PO[p.id]||[]; return `<button class="li" data-act="openPatient" data-arg="${p.id}"><span class="avatar">${initials(pName(p))}</span><span class="grow"><div class="t">${esc(pName(p))} <span class="muted small">${p.g} · ${ageText(p)}</span></div><div class="m">${p.mob}${p.uhid?' · '+esc(p.uhid):''} · ${os.length?`${os.length} order${os.length>1?'s':''}, last ${fmtDs(os[0].at)}`:'No orders yet'}</div></span>${ic('chev','sm chev')}</button>`; }).join('')}</div>`;
+}
+function orderList(d, os, showBy){
+  if(!os.length) return `<div class="list"><div class="empty">No orders yet today.</div></div>`;
+  return `<div class="list">${os.map(o=>{ const p=IX.P[o.pid]; const n=flatItems(o.items).length; return `<button class="li ${S.lastNew===o.id?'flash':''}" data-act="openOrder" data-arg="${o.id}"><span class="grow"><div class="t">${esc(pName(p))} <span class="mono small muted">${o.no}</span></div><div class="m">${fmtT(o.at)} · ${n} test${n>1?'s':''} · ${esc(docName(o.doc))}${showBy?' · by '+esc(uName(o.by)):''}</div><div class="row" style="gap:6px;margin-top:5px;flex-wrap:wrap">${statusChips(o)}${emailChip(o)}</div></span>${ic('chev','sm chev')}</button>`; }).join('')}</div>`;
+}
+
+/* ---- Patient profile ---- */
+VIEWS.patient = (d,u) => {
+  const p = IX.P[d.p.id]; if(!p) return {title:'Patient', body:'<div class="empty">Patient not found.</div>'};
+  const os = IX.PO[p.id] || [];
+  const freq = {}; os.filter(o=>o.st==='active').forEach(o=>flatItems(o.items).forEach(f=>{ const r=freq[f.c]||(freq[f.c]={n:0,last:0}); r.n++; r.last=Math.max(r.last,o.at); }));
+  const top = Object.entries(freq).sort((a,b)=>b[1].n-a[1].n||b[1].last-a[1].last).slice(0,8);
+  const info = `<div class="card"><div class="row" style="align-items:flex-start"><span class="avatar" style="width:48px;height:48px;font-size:16px">${initials(pName(p))}</span><div class="grow"><div style="font:600 19px/1.2 var(--f-display)">${esc(pName(p))}</div><div class="muted small">${gText(p.g)} · ${ageText(p)}${p.est?' (estimated)':''} · Registered ${fmtD(p.at)}</div></div></div>
+    <dl class="kv" style="margin:14px 0 0"><dt>Mobile</dt><dd class="num">+91 ${p.mob}</dd><dt>UHID</dt><dd>${esc(p.uhid)||'<span class="muted">—</span>'}</dd><dt>Email</dt><dd>${esc(p.email)||'<span class="muted">—</span>'}</dd><dt>Address</dt><dd>${esc([p.addr.line,p.addr.city,p.addr.pin].filter(Boolean).join(', '))||'—'}</dd><dt>Date of birth</dt><dd>${fmtD(p.dob)}${p.est?' <span class="chip">Estimated</span>':''}</dd></dl>
+    <div class="row" style="margin-top:14px;flex-wrap:wrap"><button class="btn pri grow" data-act="startOrder" data-arg="${p.id}">${ic('plus')}New order</button><button class="btn" data-act="editPatient" data-arg="${p.id}">${ic('edit')}Edit</button>${os.length?`<button class="btn" data-act="repeatOrder" data-arg="${p.id}">Repeat last</button>`:''}</div></div>`;
+  const fq = `<div class="card"><div class="flabel" style="margin-bottom:8px">Test frequency</div>${top.length?`<div class="chips">${top.map(([c,r])=>`<span class="chip">${esc(tName(c))} ×${r.n} <span class="muted" style="font-weight:400">· ${fmtDs(r.last)}</span></span>`).join('')}</div>`:'<div class="muted small">No tests ordered yet.</div>'}</div>`;
+  const hist = `<div class="sec">Order history <span class="r">${os.length} order${os.length===1?'':'s'}</span></div>${os.length?orderListHist(os):'<div class="list"><div class="empty">No orders yet. Start one with “New order”.</div></div>'}`;
+  const body = d.mode==='tablet' ? `<div class="split"><div class="stack">${info}${fq}</div><div>${hist.replace('class="sec"','class="sec" style="margin-top:4px"')}</div></div>` : `<div class="stack">${info}${fq}</div>${hist}`;
+  return { title: esc(pName(p)), sub: d.mode==='tablet' ? `${p.g} · ${ageText(p)} · +91 ${p.mob}` : '', body };
+};
+function orderListHist(os){
+  return `<div class="list">${os.map(o=>{ const f=flatItems(o.items); return `<button class="li" data-act="openOrder" data-arg="${o.id}"><span class="grow"><div class="t"><span class="mono">${o.no}</span></div><div class="m">${fmtD(o.at)} · ${esc(docName(o.doc))}</div><div class="m">${esc(o.items.map(x=>x.t==='b'?bName(x.c):tName(x.c)).join(', '))}</div><div class="row" style="gap:6px;margin-top:5px;flex-wrap:wrap"><span class="chip">${f.length} tests</span>${statusChips(o)}</div></span>${ic('chev','sm chev')}</button>`; }).join('')}</div>`;
+}
+
+/* ---- Patient form ---- */
+VIEWS.patientForm = (d,u) => {
+  const f = d.form, e = d.formErr || {};
+  const fld = (k,label,html,wide) => `<div class="field ${e[k]?'bad':''} ${wide?'wide':''}"><label for="${d.key}-f-${k}">${label}</label>${html}${e[k]?`<div class="err">${esc(e[k])}</div>`:''}</div>`;
+  const inp = (k,type='text',extra='') => `<input class="inp" id="${d.key}-f-${k}" type="${type}" data-in="f.${k}" value="${esc(f[k]||'')}" ${extra}>`;
+  const body = `<div class="fgrid">
+    ${fld('fn','First name *',inp('fn','text','autocomplete="off"'))}
+    ${fld('ln','Last name',inp('ln','text','autocomplete="off"'))}
+    ${fld('mob','Mobile *',`<div class="row"><span class="muted">+91</span>${inp('mob','tel','inputmode="numeric" maxlength="10" placeholder="10-digit mobile"')}</div>`)}
+    ${fld('g','Gender *',`<div class="seg" role="radiogroup">${['M','F','O'].map(g=>`<button type="button" class="${f.g===g?'on':''}" data-act="fset" data-arg="g:${g}" role="radio" aria-checked="${f.g===g}">${gText(g)}</button>`).join('')}</div>`)}
+    <div class="wide" data-region="dup">${dupWarn(d)}</div>
+    ${fld('dob','Date of birth or age *',`<div class="seg" style="margin-bottom:6px">${[['dob','Date of birth'],['age','Age']].map(([m,l])=>`<button type="button" class="${f.dobMode===m?'on':''}" data-act="fset" data-arg="dobMode:${m}">${l}</button>`).join('')}</div>${f.dobMode==='dob'?inp('dob','date',`max="${dkey(Date.now())}"`):`<div class="row">${inp('age','number','min="0" max="120" placeholder="Age"')}<select class="inp" style="width:120px" data-in="f.ageUnit" id="${d.key}-f-ageUnit">${['years','months','days'].map(x=>`<option ${f.ageUnit===x?'selected':''}>${x}</option>`).join('')}</select></div>`}`, true)}
+    ${fld('uhid','Hospital UHID / MRN',inp('uhid','text','placeholder="e.g. MH-0045812" autocomplete="off"'))}
+    ${fld('email','Email',inp('email','email','autocomplete="off"'))}
+    ${fld('line','Address',inp('line','text','placeholder="Flat, building, area"'),true)}
+    ${fld('city','City',inp('city'))}
+    ${fld('pin','PIN code',inp('pin','text','inputmode="numeric" maxlength="6"'))}
+    ${f.id?'':fld('consent','Consent *',`<label class="row small" style="align-items:flex-start;font-weight:400;color:var(--a-ink)"><input type="checkbox" data-in="f.consent" ${f.consent?'checked':''} style="width:20px;height:20px;margin:0;flex:none"> Patient consents to Hinduja Hospital storing these details for laboratory processing.</label>`,true)}
+  </div>`;
+  const footer = `<div class="obar"><button class="btn" data-act="back">Cancel</button><button class="btn pri grow" data-act="savePatient">${f.id?'Save changes':'Register & select tests'}</button></div>`;
+  return { title: f.id ? 'Edit patient' : 'New patient', body, footer: d.mode==='phone' ? footer : footer.replace('class="obar"','class="obar" style="padding-bottom:14px;padding-inline:24px"'), hideTabs:true };
+};
+function dupWarn(d){
+  const f = d.form; if(!f || !/^\d{10}$/.test(f.mob||'')) return '';
+  const m = S.patients.filter(p=>p.mob===f.mob && p.id!==f.id); if(!m.length) return '';
+  return `<div class="note"><b>This mobile number is already registered.</b> Use an existing patient if it is the same person. Family members can share a number.<div class="list" style="margin-top:8px">${m.map(p=>`<div class="li"><span class="grow"><div class="t">${esc(pName(p))}</div><div class="m">${p.g} · ${ageText(p)}${p.uhid?' · '+esc(p.uhid):''}</div></span><button class="btn sm" data-act="useExisting" data-arg="${p.id}">Use this patient</button></div>`).join('')}</div></div>`;
+}
+
+/* ---- Order builder ---- */
+VIEWS.order = (d,u) => {
+  const dr = d.draft; const p = IX.P[dr.pid];
+  if(!p) return {title:'New order', body:'<div class="empty">No patient selected.</div>'};
+  const title = dr.amendOf ? 'Amend '+esc(S.orders.find(o=>o.id===dr.amendOf).no) : 'New order';
+  const sub = `${esc(pName(p))} · ${p.g} · ${ageText(p)}`;
+  const f = flatItems(dr.items);
+  if(d.mode==='tablet'){
+    const body = `<div class="ob"><div class="pickcol" data-keep="pick">${pickerHTML(d)}</div><div class="selcol">${selectionHTML(d,true)}</div></div>`;
+    return { title, sub, body, full:true };
+  }
+  if(dr.step==='details'){
+    return { title: dr.amendOf ? 'Review amendment' : 'Review order', sub, body: selectionHTML(d,false), hideTabs:true,
+      footer:`<div class="obar"><div class="sum"><b>${f.length} test${f.length===1?'':'s'} · ${inr(valueOf(dr.items))}</b>${dr.items.length} item${dr.items.length===1?'':'s'} selected</div><button class="btn pri" data-act="saveOrder" ${dr.items.length?'':'disabled'}>${dr.amendOf?'Save amendment':'Save order'}</button></div>` };
+  }
+  return { title, sub, body: pickerHTML(d), hideTabs:true,
+    footer:`<div class="obar"><div class="sum"><b>${f.length} test${f.length===1?'':'s'} · ${inr(valueOf(dr.items))}</b>${dr.items.length?dr.items.length+' item'+(dr.items.length===1?'':'s')+' selected':'Nothing selected yet'}</div><button class="btn pri" data-act="ostep" ${dr.items.length?'':'disabled'}>Review ${ic('chev','sm')}</button></div>` };
+};
+function itemSel(d,t,c){ return d.draft.items.some(x=>x.t===t&&x.c===c); }
+function coveredBy(d,c){ const b = d.draft.items.find(x=>x.t==='b' && (IX.B[x.c]?IX.B[x.c].tests:[]).includes(c)); return b ? b.c : null; }
+function testRow(d,t){
+  const on = itemSel(d,'t',t.code), cov = coveredBy(d,t.code);
+  return `<div class="pitem"><div class="grow"><div class="nm">${esc(t.name)}</div><div class="mt"><span class="mono">${t.code}</span>${tubeChip(t.sample)}<span>${t.tat<24?t.tat+' h':Math.round(t.tat/24)+' d'}</span><span class="num">${inr(t.price)}</span>${cov?`<span class="chip ok">In ${esc(bName(cov))}</span>`:''}</div></div><button class="add ${on||cov?'on':''}" data-act="toggleItem" data-arg="t:${t.code}" aria-pressed="${on}" aria-label="${on?'Remove':'Add'} ${esc(t.name)}" ${cov?'disabled':''}>${ic(on||cov?'check':'plus')}</button></div>`;
+}
+function pickerHTML(d){
+  return `<div class="search">${ic('search')}<input class="inp" id="${d.key}-oq" data-in="oq" value="${esc(d.oq||'')}" placeholder="Search tests or bundles, e.g. TSH, CBC, BIO004" autocomplete="off" aria-label="Search tests"></div><div data-region="pick">${pickerList(d)}</div>`;
+}
+function pickerList(d){
+  const q = (d.oq||'').trim().toLowerCase();
+  const bundles = S.cat.bundles.filter(b=>b.active);
+  if(q){
+    const bs = bundles.filter(b=>(b.code+' '+b.name).toLowerCase().includes(q));
+    const ts = [];
+    S.cat.cats.forEach(c=>c.subs.forEach(s=>s.tests.forEach(t=>{ if(isActiveTest(t.code) && (t.code+' '+t.name).toLowerCase().includes(q)) ts.push(t); })));
+    if(!bs.length && !ts.length) return `<div class="empty">No active test or bundle matches “${esc(d.oq)}”.</div>`;
+    return `${bs.length?`<div class="sec">Bundles</div><div class="list">${bs.map(b=>bundleRow(d,b)).join('')}</div>`:''}${ts.length?`<div class="sec">Tests <span class="r">${ts.length}</span></div><div class="list">${ts.slice(0,40).map(t=>testRow(d,t)).join('')}</div>`:''}`;
+  }
+  const cats = S.cat.cats.filter(c=>c.active).map(c=>{
+    const open = d.ocat===c.code;
+    const n = c.subs.reduce((s,x)=>s+(x.active?x.tests.filter(t=>t.active).length:0),0);
+    return `<button class="catbtn" data-act="ocat" data-arg="${c.code}" aria-expanded="${open}">${ic(open?'down':'chev','sm')}${esc(c.name)}<span class="cnt">${n} tests</span></button>${open?c.subs.filter(s=>s.active).map(s=>`<div class="subh">${esc(s.name)}</div>${s.tests.filter(t=>t.active).map(t=>testRow(d,t)).join('')}`).join(''):''}`;
+  }).join('');
+  return `<div class="sec">Bundles</div><div class="bchips">${bundles.map(b=>{ const on=itemSel(d,'b',b.code); return `<button class="bchip ${on?'on':''}" data-act="toggleItem" data-arg="b:${b.code}" aria-pressed="${on}"><b>${esc(b.name)}</b><span>${b.tests.length} tests · ${inr(b.price)}</span>${on?`<span class="chip ok" style="margin-top:6px">${ic('check','sm')}Added</span>`:''}</button>`; }).join('')}</div>
+  <div class="sec">Browse by category</div><div class="list">${cats}</div>`;
+}
+function bundleRow(d,b){ const on=itemSel(d,'b',b.code); return `<div class="pitem"><div class="grow"><div class="nm">${esc(b.name)}</div><div class="mt"><span class="mono">${b.code}</span><span>${b.tests.length} tests</span><span class="num">${inr(b.price)}</span></div></div><button class="add ${on?'on':''}" data-act="toggleItem" data-arg="b:${b.code}" aria-pressed="${on}" aria-label="${on?'Remove':'Add'} ${esc(b.name)}">${ic(on?'check':'plus')}</button></div>`; }
+function selectionHTML(d, isPanel){
+  const dr = d.draft; const f = flatItems(dr.items); const sm = samplesOf(dr.items);
+  const items = dr.items.length ? dr.items.map(x=>{
+    if(x.t==='b'){ const b=IX.B[x.c]; return `<div class="selitem"><div class="grow"><b>${esc(b.name)}</b> <span class="chip">Bundle</span><ul>${b.tests.map(c=>`<li>${esc(tName(c))}</li>`).join('')}</ul></div><span class="num small">${inr(priceOf(x))}</span><button class="x" data-act="toggleItem" data-arg="b:${x.c}" aria-label="Remove">${ic('x','sm')}</button></div>`; }
+    const t=IX.T[x.c].t; return `<div class="selitem"><div class="grow">${esc(t.name)}<div class="small muted">${tubeChip(t.sample)}</div></div><span class="num small">${inr(priceOf(x))}</span><button class="x" data-act="toggleItem" data-arg="t:${x.c}" aria-label="Remove">${ic('x','sm')}</button></div>`;
+  }).join('') : `<div class="empty" style="padding:18px 4px">Add tests or bundles from the list${isPanel?' on the left':''}.</div>`;
+  const docs = S.doctors.filter(x=>x.active);
+  const details = `
+    <div class="field"><label for="${d.key}-doc">Referring doctor</label><select class="inp" id="${d.key}-doc" data-in="draft.doc" data-rr="1"><option value="">Self / walk-in</option>${docs.map(x=>`<option value="${x.id}" ${dr.doc===x.id?'selected':''}>${esc(x.name)}${x.spec?' — '+esc(x.spec):''}${x.verified?'':' (unverified)'}</option>`).join('')}<option value="__new" ${dr.doc==='__new'?'selected':''}>+ Add a doctor not in the list…</option></select>${dr.doc==='__new'?`<input class="inp" style="margin-top:6px" id="${d.key}-docnew" data-in="draft.docNew" value="${esc(dr.docNew||'')}" placeholder="Doctor's full name">`:''}</div>
+    <div class="field"><span class="flabel">Priority</span><div class="seg">${[['R','Routine'],['U','Urgent']].map(([k,l])=>`<button type="button" class="${dr.pri===k?'on':''}" data-act="dset" data-arg="pri:${k}">${l}</button>`).join('')}</div></div>
+    <div class="field"><label for="${d.key}-notes">Clinical notes</label><textarea class="inp" id="${d.key}-notes" data-in="draft.notes" maxlength="500" rows="3" placeholder="Optional, e.g. fasting since 10 pm">${esc(dr.notes)}</textarea></div>
+    ${dr.amendOf?`<div class="field ${dr.reasonErr?'bad':''}"><label for="${d.key}-reason">Reason for amendment *</label><input class="inp" id="${d.key}-reason" data-in="draft.reason" value="${esc(dr.reason||'')}" placeholder="e.g. Doctor added a test on call">${dr.reasonErr?'<div class="err">Enter a reason for the amendment.</div>':''}</div>`:''}`;
+  const summary = `<div class="flabel" style="margin:14px 0 6px">Samples needed</div><div class="tubes">${Object.keys(sm).length?Object.entries(sm).map(([s,n])=>`${tubeChip(s)}<span class="small muted" style="margin-left:-8px">×${n}</span>`).join(''):'<span class="small muted">—</span>'}</div><div class="total"><span>${f.length} test${f.length===1?'':'s'}</span><span class="num">${inr(valueOf(dr.items))}</span></div>`;
+  if(isPanel) return `<div class="sel-scroll" data-keep="sel"><div class="flabel">Selected (${dr.items.length})</div>${items}${summary}<div class="stack" style="margin-top:16px">${details}</div></div><div class="sel-foot"><button class="btn pri block" data-act="saveOrder" ${dr.items.length?'':'disabled'}>${dr.amendOf?'Save amendment':'Save order'}</button></div>`;
+  return `<div class="card">${items}${summary}</div><div class="stack" style="margin-top:16px">${details}</div><button class="btn block" style="margin-top:14px" data-act="ostepBack">${ic('plus','sm')}Add more tests</button>`;
+}
+
+/* ---- Order view ---- */
+VIEWS.orderView = (d,u) => {
+  const o = S.orders.find(x=>x.id===d.p.id); if(!o) return {title:'Order', body:'<div class="empty">Order not found.</div>'};
+  const p = IX.P[o.pid]; const f = flatItems(o.items); const sm = samplesOf(o.items);
+  const e = o.email || {};
+  const emailCard = `<div class="card"><div class="emailcard"><span style="color:var(--a-pri)">${ic('mail')}</span><div class="grow"><b>Email to lab staff</b><div class="small muted">${e.st==='sent'?`${({new:'New order',amended:'Amendment',cancelled:'Cancellation'})[e.type]||'Order'} email sent ${fmtDT(e.at)}${e.n>1?` · ${e.n} sends`:''}`:e.st==='failed'?`Failed after ${e.n} attempts: ${esc(e.err||'')}`:`${({new:'New order',amended:'Amendment',cancelled:'Cancellation'})[e.type]||'Order'} email has not been sent yet`}</div></div>${emailChip(o)}</div><button class="btn ${e.st==='sent'?'':'pri'} block" style="margin-top:12px" data-act="previewEmail" data-arg="${o.id}">${ic('mail','sm')}${e.st==='sent'?'View email':'Preview & send email'}</button></div>`;
+  const pcard = `<button class="li card" style="border-radius:14px" data-act="openPatient" data-arg="${p.id}"><span class="avatar">${initials(pName(p))}</span><span class="grow"><div class="t">${esc(pName(p))}</div><div class="m">${gText(p.g)} · ${ageText(p,o.at)} · +91 ${p.mob}${p.uhid?' · '+esc(p.uhid):''}</div></span>${ic('chev','sm chev')}</button>`;
+  const items = o.items.map(x=> x.t==='b'
+    ? `<div class="selitem"><div class="grow"><b>${esc(bName(x.c))}</b> <span class="chip">Bundle · ${x.c}</span><ul>${(x.ts||IX.B[x.c].tests).map(c=>`<li>${esc(tName(c))} <span class="mono">${c}</span></li>`).join('')}</ul></div><span class="num small">${inr(priceOf(x))}</span></div>`
+    : `<div class="selitem"><div class="grow">${esc(tName(x.c))} <span class="mono small muted">${x.c}</span><div class="small">${tubeChip(IX.T[x.c]?IX.T[x.c].t.sample:'')}</div></div><span class="num small">${inr(priceOf(x))}</span></div>`).join('');
+  const tcard = `<div class="card"><div class="flabel">Tests (${f.length})</div>${items}<div class="flabel" style="margin:12px 0 6px">Samples needed</div><div class="tubes">${Object.entries(sm).map(([s,n])=>`${tubeChip(s)}<span class="small muted" style="margin-left:-8px">×${n}</span>`).join('')}</div><div class="total"><span>List value</span><span class="num">${inr(valueOf(o.items))}</span></div></div>`;
+  const meta = `<div class="card"><dl class="kv"><dt>Order date</dt><dd>${fmtDT(o.at)}</dd><dt>Referring doctor</dt><dd>${esc(docName(o.doc))}${o.doc&&IX.D[o.doc]&&!IX.D[o.doc].verified?' <span class="chip warn">Unverified</span>':''}</dd><dt>Priority</dt><dd>${o.pri==='U'?'<span class="chip urg">Urgent</span>':'Routine'}</dd><dt>Clinical notes</dt><dd>${esc(o.notes)||'<span class="muted">—</span>'}</dd><dt>Registered by</dt><dd>${esc(uName(o.by))}</dd>${o.st==='cancelled'?`<dt>Cancelled</dt><dd>${esc(o.cancelReason)}</dd>`:''}</dl>
+    ${o.hist&&o.hist.length?`<div class="flabel" style="margin:14px 0 6px">Version history</div>${o.hist.map(h=>`<div class="small">v${h.ver} · ${fmtDT(h.at)} · ${esc(uName(h.by))}${h.reason?' — '+esc(h.reason):' — original'}</div>`).join('')}`:''}</div>`;
+  const editable = canEdit(u,o);
+  const actions = `<div class="row" style="flex-wrap:wrap">${editable?`<button class="btn grow" data-act="amendOrder" data-arg="${o.id}">${ic('edit','sm')}Amend</button><button class="btn danger grow" data-act="cancelOrder" data-arg="${o.id}">${ic('ban','sm')}Cancel order</button>`:''}<button class="btn grow" data-act="startOrder" data-arg="${p.id}">${ic('plus','sm')}New order for patient</button></div>${!editable&&o.st==='active'&&u.role!=='admin'?'<div class="small muted" style="margin-top:6px">Staff can amend or cancel their own orders until midnight on the day they were created.</div>':''}`;
+  const head = `<div class="ohead"><span class="ono">${o.no}</span>${statusChips(o)}</div><div class="small muted" style="margin:2px 0 14px">${fmtDT(o.at)} · ${f.length} tests · by ${esc(uName(o.by))}</div>`;
+  const body = d.mode==='tablet'
+    ? `${head}<div class="split"><div class="stack">${pcard}${tcard}</div><div class="stack">${emailCard}${meta}${actions}</div></div>`
+    : `${head}<div class="stack">${emailCard}${pcard}${tcard}${meta}${actions}</div>`;
+  return { title: d.mode==='phone' ? 'Order' : 'Order '+o.no, body };
+};
+
+/* ---- Orders list ---- */
+VIEWS.orders = (d,u) => {
+  const r = d.p.range || 'today';
+  const {a} = rangeBounds(r);
+  let os = S.orders.filter(o=>o.at>=a && (u.role==='admin'||o.by===u.id)).sort((x,y)=>y.at-x.at);
+  const body = `<div class="row" style="flex-wrap:wrap;margin-bottom:12px">${seg('orange',r,[['today','Today'],['7d','7 days'],['30d','30 days']])}<div class="search grow" style="min-width:180px">${ic('search')}<input class="inp" id="${d.key}-olq" data-in="olq" value="${esc(d.olq||'')}" placeholder="Order no. or patient" aria-label="Filter orders"></div></div><div data-region="olist">${ordersFiltered(d,os,u)}</div>`;
+  return { title: u.role==='admin' ? 'Orders' : 'My orders', body };
+};
+function ordersFiltered(d,os,u){
+  const q=(d.olq||'').trim().toLowerCase();
+  if(q) os = os.filter(o=>o.no.toLowerCase().includes(q) || pName(IX.P[o.pid]).toLowerCase().includes(q));
+  const more = os.length>60 ? `<div class="small muted" style="margin-top:8px">Showing 60 of ${os.length}. Use Reports for the full register.</div>` : '';
+  return `<div class="small muted" style="margin:0 2px 8px">${os.length} order${os.length===1?'':'s'}</div>${orderList(d,os.slice(0,60),u.role==='admin')}${more}`;
+}
+const seg = (act,cur,opts) => `<div class="seg">${opts.map(([k,l])=>`<button type="button" class="${cur===k?'on':''}" data-act="${act}" data-arg="${k}">${l}</button>`).join('')}</div>`;
+
+/* ---- More (phone) ---- */
+VIEWS.more = (d,u) => {
+  const extra = u.role==='admin' ? [['catalogue','Test catalogue','flask'],['doctors','Referring doctors','steth'],['users','Users','user'],['settings','Settings','gear'],['audit','Audit log','clock']] : [];
+  return { title: u.role==='admin'?'More':'Account', body: `<div class="card row"><span class="avatar" style="width:46px;height:46px">${initials(u.name)}</span><div class="grow"><b>${esc(u.name)}</b><div class="small muted">${u.role==='admin'?'Admin':'Staff'} · ${esc(u.title)}</div><div class="small muted">${esc(u.email)}</div></div></div>
+  ${extra.length?`<div class="sec">Administration</div><div class="list">${extra.map(([r,l,i])=>`<button class="li" data-act="nav" data-arg="${r}">${ic(i)}<span class="grow t">${l}</span>${ic('chev','sm chev')}</button>`).join('')}</div>`:''}
+  <div class="sec">Session</div><div class="list"><button class="li" data-act="logout">${ic('out')}<span class="grow t">Sign out</span></button></div>
+  <p class="small muted" style="margin-top:14px">You are signed out automatically after 30 minutes without activity.</p>` };
+};
+
+/* ================= dashboard ================= */
+function rangeBounds(r){
+  const now = Date.now(), t0 = sod(now);
+  if(r==='today') { const y0=addDays(t0,-1); return {a:t0,b:now+1,pa:y0,pb:y0+(now-t0)+1,label:'vs same time yesterday'}; }
+  if(r==='all') return {a:0,b:now+1,pa:0,pb:0,label:''};
+  const n = r==='7d'?7:30; const a = addDays(t0,-(n-1)); return {a,b:now+1,pa:addDays(a,-n),pb:a,label:`vs previous ${n} days`};
+}
+const ordersIn = (a,b,incC) => S.orders.filter(o=>o.at>=a && o.at<b && (incC || o.st!=='cancelled'));
+function agg(os){
+  let tests=0,val=0,urg=0,bun=0,newP=0; const pts=new Set();
+  os.forEach(o=>{ tests+=flatItems(o.items).length; val+=valueOf(o.items); if(o.pri==='U') urg++; if(o.items.some(x=>x.t==='b')) bun++; pts.add(o.pid); if(IX.first[o.pid]===o.id) newP++; });
+  return {orders:os.length,tests,val,urg,bun,patients:pts.size,newP};
+}
+function delta(cur,prev,label){ if(!prev) return `<span class="d">No data ${esc(label.replace('vs ','for '))}</span>`; const p=Math.round((cur-prev)/prev*100); return `<span class="d">${p>0?'▲':p<0?'▼':'■'} ${Math.abs(p)}% ${esc(label)}</span>`; }
+function niceMax(v){ const s=[6,9,12,15,18,21,24,30,36,45,60,75,90,120,150,180,240,300,450,600,900,1200,1500,3000]; return s.find(x=>x>=v) || Math.ceil(v/300)*300; }
+
+VIEWS.dashboard = (d,u) => {
+  const r = d.p.range || '7d';
+  const B = rangeBounds(r);
+  const os = ordersIn(B.a,B.b), pos = ordersIn(B.pa,B.pb);
+  const A = agg(os), P = agg(pos);
+  const allIn = ordersIn(B.a,B.b,true);
+  const em = {sent:0,draft:0,failed:0}; allIn.forEach(o=>em[o.email.st]=(em[o.email.st]||0)+1);
+  const kpi = (l,v,dl,cls='') => `<div class="kpi ${cls}"><div class="l">${l}</div><div class="v">${v}</div>${dl}</div>`;
+  const kpis = `<div class="kpis">
+    ${kpi('Orders',nf.format(A.orders),delta(A.orders,P.orders,B.label))}
+    ${kpi('Tests ordered',nf.format(A.tests),delta(A.tests,P.tests,B.label))}
+    ${kpi('Patients served',nf.format(A.patients),`<span class="d">${A.newP} new · ${A.patients-A.newP} returning</span>`)}
+    ${kpi('Avg tests per order',A.orders?(A.tests/A.orders).toFixed(1):'—',`<span class="d">Previous ${P.orders?(P.tests/P.orders).toFixed(1):'—'}</span>`)}
+    ${kpi('Order value (list)',inr(A.val),delta(A.val,P.val,B.label))}
+    ${kpi('Urgent share',pct(A.urg,A.orders)+'%',`<span class="d">${A.urg} urgent orders</span>`)}
+    ${kpi('Bundle uptake',pct(A.bun,A.orders)+'%',`<span class="d">${A.bun} orders with a bundle</span>`)}
+    ${kpi('Email health',`${em.sent}<span class="small muted" style="font:500 13px var(--f-body)"> sent</span>`,`<span class="d">${em.failed?`<b style="color:var(--a-bad)">${em.failed} failed</b> · `:''}${em.draft} not sent</span>`, em.failed?'alert':'')}
+  </div>`;
+  const panel = (t,s,html,extra='') => `<div class="panel" ${extra}><h3>${t}</h3><div class="ps">${s}</div>${html}</div>`;
+  const rl = {today:'today',['7d']:'last 7 days',['30d']:'last 30 days'}[r];
+  const grid = `<div class="dgrid">
+    ${panel('Orders per day','Last 30 days, with 7-day average',trendChart())}
+    ${panel('Peak hours','Orders by weekday and hour, last 30 days',heatmap())}
+    ${panel('Top tests',`Most ordered, ${rl}`,topTests(os))}
+    ${panel('Category mix',`Tests by category, ${rl} · tap to open report`,categoryMix(os))}
+    ${panel('Sample-type load',`Tests by sample container, ${rl}`,sampleLoad(os))}
+    ${panel('Turnaround load',`Tests by expected turnaround, ${rl}`,tatLoad(os))}
+    ${panel('Patient demographics',`Unique patients by age band, ${rl}`,demographics(os))}
+    ${panel('Referring doctors',`Top referrers, ${rl}`,doctorTable(os,pos))}
+    ${panel('Live feed','Latest orders, updates in real time',liveFeed())}
+    ${panel('Needs attention','Exceptions to act on',attention())}
+  </div>`;
+  return { title:'Dashboard', sub: d.mode==='tablet' ? `${esc(S.settings.lab.name)} · ${fmtD(Date.now())}` : '', actions: d.mode==='tablet' ? seg('drange',r,[['today','Today'],['7d','7 days'],['30d','30 days']]) : '', body: (d.mode==='phone'?`<div style="margin-bottom:12px">${seg('drange',r,[['today','Today'],['7d','7 days'],['30d','30 days']])}</div>`:'') + kpis + grid };
+};
+function trendChart(){
+  const t0 = sod(Date.now()); const days=[]; for(let i=29;i>=0;i--) days.push(addDays(t0,-i));
+  const cnt = {}; S.orders.forEach(o=>{ if(o.st!=='cancelled') cnt[o.date]=(cnt[o.date]||0)+1; });
+  const ser = days.map((ms,i)=>({ms,v:cnt[dkey(ms)]||0}));
+  ser.forEach((s,i)=>{ if(i>=6){ let sum=0; for(let j=i-6;j<=i;j++) sum+=ser[j].v; s.ma=sum/7; } });
+  const W=360,H=176,L=28,Rr=14,T=12,Bm=22, iw=W-L-Rr, ih=H-T-Bm;
+  const max = niceMax(Math.max(...ser.map(s=>Math.max(s.v,s.ma||0)),1));
+  const x = i => L + i*iw/(ser.length-1), y = v => T + ih - v/max*ih;
+  let g=''; for(let j=0;j<=3;j++){ const v=max*j/3; g+=`<line class="gl" x1="${L}" x2="${W-Rr}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/><text x="${L-6}" y="${(y(v)+3.5).toFixed(1)}" text-anchor="end">${Math.round(v)}</text>`; }
+  let xl=''; for(let i=ser.length-1;i>=0;i-=7){ xl+=`<text x="${x(i).toFixed(1)}" y="${H-6}" text-anchor="${i===ser.length-1?'end':'middle'}">${fmtDs(ser[i].ms)}</text>`; }
+  const line = ser.map((s,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(s.v).toFixed(1)}`).join('');
+  const ma = ser.map((s,i)=>s.ma==null?'':`${i===6?'M':'L'}${x(i).toFixed(1)},${y(s.ma).toFixed(1)}`).join('');
+  const cw = iw/(ser.length-1);
+  const cols = ser.map((s,i)=>`<g class="col" data-tip="${esc(`${WD[new Date(s.ms).getDay()]} ${fmtDs(s.ms)}\n${s.v} orders${s.ma!=null?` · 7-day avg ${s.ma.toFixed(1)}`:''}`)}"><line class="xh" x1="${x(i).toFixed(1)}" x2="${x(i).toFixed(1)}" y1="${T}" y2="${T+ih}"/><rect class="hit" x="${(x(i)-cw/2).toFixed(1)}" y="${T}" width="${cw.toFixed(1)}" height="${ih}"/></g>`).join('');
+  const last = ser[ser.length-1];
+  return `<div class="legend"><span><i class="ln" style="background:${S1}"></i>Orders</span><span><i class="ln" style="background:${S2}"></i>7-day average</span></div><svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Orders per day for the last 30 days">${g}${xl}<path d="${ma}" fill="none" stroke="${S2}" stroke-width="2" stroke-linejoin="round"/><path d="${line}" fill="none" stroke="${S1}" stroke-width="2" stroke-linejoin="round"/><circle cx="${x(ser.length-1)}" cy="${y(last.v)}" r="4.5" fill="${S1}" stroke="#fff" stroke-width="2"/><text x="${x(ser.length-1)-8}" y="${Math.max(T+10,y(last.v)-12)}" text-anchor="end" style="font-weight:600;fill:#13242b;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round">${last.v} today</text>${cols}</svg>`;
+}
+function heatmap(){
+  const from = addDays(sod(Date.now()),-29); const m={}; let max=1;
+  S.orders.forEach(o=>{ if(o.at<from||o.st==='cancelled') return; const dt=new Date(o.at); const h=dt.getHours(); if(h<8||h>19) return; const k=dt.getDay()+'_'+h; m[k]=(m[k]||0)+1; max=Math.max(max,m[k]); });
+  const lerp=(a,b,t)=>Math.round(a+(b-a)*t);
+  const col = v => { const t=Math.pow(v/max,0.8); return `rgb(${lerp(230,8,t)},${lerp(244,96,t)},${lerp(242,88,t)})`; };
+  let html = '<div class="heat"><span></span>'; for(let h=8;h<=19;h++) html+=`<span class="h">${h%2===0?h:''}</span>`;
+  [1,2,3,4,5,6,0].forEach(wd=>{ html+=`<span class="d">${WD[wd]}</span>`; for(let h=8;h<=19;h++){ const v=m[wd+'_'+h]||0; html+=`<span class="c" style="background:${col(v)}" data-tip="${esc(`${WD[wd]} ${pad(h)}:00–${pad(h+1)}:00\n${v} orders in 30 days`)}"></span>`; } });
+  return html + '</div><div class="ramp">Fewer <i></i> More orders</div>';
+}
+function hbars(rows, max){ // rows: [{label, segs:[{v,c,tip}], total, act?}]
+  if(!rows.length) return '<div class="empty">No orders in this period.</div>';
+  return `<div class="hb">${rows.map(r=>`${r.act?`<button class="lb" data-act="${r.act}" data-arg="${r.arg}" title="${esc(r.label)}">${esc(r.label)}</button>`:`<span class="lb" title="${esc(r.label)}">${esc(r.label)}</span>`}<div class="track">${r.segs.filter(s=>s.v>0).map(s=>`<span class="bar" style="width:${(s.v/max*100).toFixed(2)}%;background:${s.c}" data-tip="${esc(s.tip)}"></span>`).join('')}</div><span class="vl">${r.total}</span>`).join('')}</div>`;
+}
+function topTests(os){
+  const m={}; os.forEach(o=>flatItems(o.items).forEach(f=>{ const r=m[f.c]||(m[f.c]={d:0,b:0}); f.via?r.b++:r.d++; }));
+  const rows = Object.entries(m).map(([c,r])=>({c,...r,t:r.d+r.b})).sort((a,b)=>b.t-a.t).slice(0,10);
+  const max = rows.length?rows[0].t:1;
+  return `<div class="legend"><span><i style="background:${S1}"></i>Ordered directly</span><span><i style="background:${S2}"></i>Via bundle</span></div>` + hbars(rows.map(r=>({label:tName(r.c), total:r.t, segs:[{v:r.d,c:S1,tip:`${tName(r.c)}\n${r.d} ordered directly`},{v:r.b,c:S2,tip:`${tName(r.c)}\n${r.b} via bundle`}]})), max);
+}
+function categoryMix(os){
+  const m={}; let tot=0; os.forEach(o=>flatItems(o.items).forEach(f=>{ const x=IX.T[f.c]; if(!x) return; m[x.c.code]=(m[x.c.code]||0)+1; tot++; }));
+  const rows = S.cat.cats.map(c=>({c,v:m[c.code]||0})).sort((a,b)=>b.v-a.v);
+  const max = Math.max(1,...rows.map(r=>r.v));
+  return hbars(rows.map(r=>({label:r.c.name, total:r.v, act:'drill', arg:r.c.code, segs:[{v:r.v,c:S1,tip:`${r.c.name}\n${r.v} tests · ${pct(r.v,tot)}% of all tests`}]})), max);
+}
+function sampleLoad(os){
+  const m={}; os.forEach(o=>Object.entries(samplesOf(o.items)).forEach(([s,n])=>{ const r=m[s]||(m[s]={t:0,o:0}); r.t+=n; r.o++; }));
+  const rows = Object.entries(m).sort((a,b)=>b[1].o-a[1].o).slice(0,8);
+  const max = Math.max(1,...rows.map(r=>r[1].o));
+  return `<div class="small muted" style="margin-top:-4px;margin-bottom:8px">Bar = orders needing that container (one container per order)</div>` + hbars(rows.map(([s,r])=>({label:s+(TUBE[s]?' · '+TUBE[s].cap:''), total:r.o, segs:[{v:r.o,c:TUBE[s]?TUBE[s].c:'#6f8a83',tip:`${s}${TUBE[s]?' ('+TUBE[s].cap+')':''}\n${r.o} orders · ${r.t} tests`}]})), max);
+}
+function tatLoad(os){
+  const b=[['Within 4 hours',0],['4–24 hours',0],['1–3 days',0],['Over 3 days',0]];
+  os.forEach(o=>flatItems(o.items).forEach(f=>{ const t=IX.T[f.c]?IX.T[f.c].t.tat:0; b[t<=4?0:t<=24?1:t<=72?2:3][1]++; }));
+  const max=Math.max(1,...b.map(x=>x[1]));
+  return hbars(b.map(([l,v])=>({label:l,total:v,segs:[{v,c:S1,tip:`${l}\n${v} tests`}]})), max);
+}
+function demographics(os){
+  const bands=[['0–12',0,12],['13–17',13,17],['18–30',18,30],['31–45',31,45],['46–60',46,60],['60+',61,200]];
+  const seen=new Set(), m={}; let other=0;
+  os.forEach(o=>{ if(seen.has(o.pid)) return; seen.add(o.pid); const p=IX.P[o.pid]; if(!p) return; if(p.g==='O'){ other++; return; } const a=Math.floor(ageDays(p,o.at)/365.25); const bd=bands.find(b=>a>=b[1]&&a<=b[2]); const k=bd[0]+p.g; m[k]=(m[k]||0)+1; });
+  const max=Math.max(1,...Object.values(m));
+  if(!seen.size) return '<div class="empty">No orders in this period.</div>';
+  return `<div class="legend"><span><i style="background:${S1}"></i>Male</span><span><i style="background:${S2}"></i>Female</span></div><div class="hb">${bands.map(([l])=>{ const mv=m[l+'M']||0, fv=m[l+'F']||0; return `<span class="lb">${l} yrs</span><div style="display:grid;gap:2px"><div class="track" style="height:9px"><span class="bar" style="width:${(mv/max*100).toFixed(1)}%;background:${S1}" data-tip="${esc(`${l} yrs · Male\n${mv} patients`)}"></span></div><div class="track" style="height:9px"><span class="bar" style="width:${(fv/max*100).toFixed(1)}%;background:${S2}" data-tip="${esc(`${l} yrs · Female\n${fv} patients`)}"></span></div></div><span class="vl">${mv+fv}</span>`; }).join('')}</div>${other?`<div class="small muted" style="margin-top:6px">${other} patient(s) with gender “Other” not shown.</div>`:''}`;
+}
+function doctorTable(os,pos){
+  const m={}, pm={};
+  os.forEach(o=>{ const k=o.doc||'self'; const r=m[k]||(m[k]={o:0,pt:new Set(),v:0}); r.o++; r.pt.add(o.pid); r.v+=valueOf(o.items); });
+  pos.forEach(o=>{ const k=o.doc||'self'; pm[k]=(pm[k]||0)+1; });
+  const rows = Object.entries(m).sort((a,b)=>b[1].o-a[1].o).slice(0,6);
+  if(!rows.length) return '<div class="empty">No orders in this period.</div>';
+  return `<div class="tblw"><table class="t"><thead><tr><th>Doctor</th><th class="n">Orders</th><th class="n">Patients</th><th class="n">Value</th><th class="n">Change</th></tr></thead><tbody>${rows.map(([k,r])=>{ const pv=pm[k]||0; const ch=pv?Math.round((r.o-pv)/pv*100):null; return `<tr><td>${esc(k==='self'?'Self / walk-in':docName(k))}</td><td class="n">${r.o}</td><td class="n">${r.pt.size}</td><td class="n">${inr(r.v)}</td><td class="n">${ch==null?'new':(ch>0?'▲':ch<0?'▼':'■')+' '+Math.abs(ch)+'%'}</td></tr>`; }).join('')}</tbody></table></div>`;
+}
+function liveFeed(){
+  const os = S.orders.slice().sort((a,b)=>b.at-a.at).slice(0,7);
+  return `<div class="feed">${os.map(o=>{ const p=IX.P[o.pid]; const n=flatItems(o.items).length; return `<button class="li ${S.lastNew===o.id?'flash':''}" style="padding-inline:0" data-act="openOrder" data-arg="${o.id}"><span class="mono small muted" style="width:40px">${fmtT(o.at)}</span><span class="grow"><div class="t" style="font-size:14px">${esc(pName(p))}</div><div class="m">${o.no} · ${n} test${n>1?'s':''} · ${esc(uName(o.by))}</div></span><span class="row" style="gap:4px;flex-wrap:wrap;justify-content:flex-end">${statusChips(o)}${emailChip(o)}</span></button>`; }).join('')}</div>`;
+}
+function attention(){
+  const now=Date.now(), t0=sod(now); const items=[];
+  S.orders.filter(o=>o.email.st==='failed').forEach(o=>items.push([`var(--a-bad)`,`Email failed for <b class="mono">${o.no}</b> (${esc(o.email.err||'')}).`,`openOrder`,o.id,'Open']));
+  const pend = S.orders.filter(o=>o.email.st==='draft' && now-o.at>10*60e3);
+  if(pend.length) items.push(['#c9790a',`${pend.length} order email${pend.length>1?'s have':' has'} not been sent for over 10 minutes.`,'nav','orders','View']);
+  const urg = S.orders.filter(o=>o.at>=t0 && o.pri==='U' && o.st==='active');
+  if(urg.length) items.push(['#a14d00',`${urg.length} urgent order${urg.length>1?'s':''} today.`,'nav','orders','View']);
+  const unv = S.doctors.filter(x=>!x.verified && x.active);
+  if(unv.length) items.push(['#5a6d73',`${unv.length} referring doctor${unv.length>1?'s':''} waiting for verification.`,'nav','doctors','Review']);
+  const c30 = ordersIn(addDays(t0,-29),now+1,true); const cr = pct(c30.filter(o=>o.st==='cancelled').length, c30.length);
+  if(cr>5) items.push(['var(--a-bad)',`Cancellation rate is ${cr}% over 30 days.`,'nav','reports','Reports']);
+  if(!items.length) return '<div class="empty">Nothing needs attention.</div>';
+  return items.map(([c,t,a,arg,l])=>`<div class="att"><span class="dot" style="background:${c}"></span><span class="grow">${t}</span><button class="btn sm" data-act="${a}" data-arg="${arg}">${l}</button></div>`).join('');
+}
+
+/* ================= reports ================= */
+const REPORTS = [
+  ['R1','Order Register','One row per order, with patient, tests, doctor and email status'],
+  ['R2','Test-wise Register','One row per test per order'],
+  ['R3','Test Volume Summary','Counts per test, direct vs via bundle, change vs previous period'],
+  ['R4','Category Summary','Orders, tests and patients by category and sub-category'],
+  ['R5','Bundle Performance','Orders, value and patient profile per bundle'],
+  ['R6','Patient History','All orders and test frequency for one patient'],
+  ['R7','Patient Register','Patients registered in the period'],
+  ['R8','Referring Doctor Report','Orders, patients, value and top tests per doctor'],
+  ['R9','Staff Activity','Registrations, orders, amendments per staff per day'],
+  ['R10','Daily Summary','Day-end totals'],
+  ['R11','Amendments & Cancellations','Every change to a saved order'],
+  ['R12','Email Delivery Log','Every email attempt and its result'],
+];
+VIEWS.reports = (d,u) => ({ title:'Reports', sub: d.mode==='tablet'?'Filter, sort and export any report':'', body:`<div class="rlist">${REPORTS.map(([k,n,s])=>`<button class="rcard" data-act="openReport" data-arg="${k}"><span class="k">${k}</span><span class="grow"><b>${n}</b><span>${s}</span></span>${ic('chev','sm chev')}</button>`).join('')}</div>` });
+function reportData(k, os, ctx){
+  const C = (h,num,fmt) => ({h,num,fmt});
+  const rowsAll = [];
+  const prev = ctx.prev;
+  if(k==='R1') return { cols:[C('Order no.'),C('Date'),C('Time'),C('Patient'),C('UHID'),C('Gender'),C('Age'),C('Mobile'),C('Referring doctor'),C('Bundles'),C('Tests'),C('Test count',1),C('Sample types'),C('Priority'),C('List value ₹',1,'inr'),C('Clinical notes'),C('Registered by'),C('Email status'),C('Status'),C('Version',1)],
+    rows: os.map(o=>{ const p=IX.P[o.pid]; const f=flatItems(o.items); return [o.no,fmtD(o.at),fmtT(o.at),pName(p),p.uhid,p.g,ageText(p,o.at),p.mob,docName(o.doc),o.items.filter(x=>x.t==='b').map(x=>bName(x.c)).join('; '),f.map(x=>tName(x.c)).join('; '),f.length,Object.keys(samplesOf(o.items)).join(', '),o.pri==='U'?'Urgent':'Routine',valueOf(o.items),o.notes,uName(o.by),o.email.st,o.st,o.ver]; }) };
+  if(k==='R2'){ const rows=[]; os.forEach(o=>{ const p=IX.P[o.pid]; flatItems(o.items).forEach(f=>{ const x=IX.T[f.c]; if(ctx.cat && (!x||x.c.code!==ctx.cat)) return; const it=o.items.find(i=>i.t==='t'&&i.c===f.c); rows.push([fmtD(o.at),fmtT(o.at),o.no,pName(p),ageText(p,o.at)+' / '+p.g,x?x.c.name:'',x?x.s.name:'',f.c,tName(f.c),x?x.t.sample:'',x?x.t.tat:'',f.via?bName(f.via):'—',it?priceOf(it):'',docName(o.doc),o.pri==='U'?'Urgent':'Routine',uName(o.by)]); }); });
+    return { cols:[C('Date'),C('Time'),C('Order no.'),C('Patient'),C('Age / Gender'),C('Category'),C('Sub-category'),C('Test code'),C('Test name'),C('Sample type'),C('TAT (h)',1),C('Via bundle'),C('Price ₹',1,'inr'),C('Referring doctor'),C('Priority'),C('Registered by')], rows }; }
+  if(k==='R3'){ const m={}, pm={}; let tot=0; os.forEach(o=>flatItems(o.items).forEach(f=>{ const r=m[f.c]||(m[f.c]={d:0,b:0,p:new Set(),v:0}); f.via?r.b++:(r.d++, r.v+=IX.T[f.c]?IX.T[f.c].t.price:0); r.p.add(o.pid); tot++; })); prev.forEach(o=>flatItems(o.items).forEach(f=>pm[f.c]=(pm[f.c]||0)+1));
+    return { cols:[C('Test code'),C('Test name'),C('Category'),C('Sub-category'),C('Total',1),C('Direct',1),C('Via bundle',1),C('Unique patients',1),C('Direct value ₹',1,'inr'),C('% of tests',1,'pct'),C('Previous period',1),C('Change %',1,'pct')],
+      rows: Object.entries(m).filter(([c])=>!ctx.cat||(IX.T[c]&&IX.T[c].c.code===ctx.cat)).map(([c,r])=>{ const x=IX.T[c]; const t=r.d+r.b; const pv=pm[c]||0; return [c,tName(c),x?x.c.name:'',x?x.s.name:'',t,r.d,r.b,r.p.size,r.v,tot?t/tot*100:0,pv,pv?(t-pv)/pv*100:'']; }).sort((a,b)=>b[4]-a[4]) }; }
+  if(k==='R4'){ const m={}; let tot=0; os.forEach(o=>{ const seenS=new Set(); flatItems(o.items).forEach(f=>{ const x=IX.T[f.c]; if(!x) return; const key=x.s.code; const r=m[key]||(m[key]={c:x.c.name,s:x.s.name,o:0,t:0,p:new Set()}); r.t++; tot++; r.p.add(o.pid); if(!seenS.has(key)){ seenS.add(key); r.o++; } }); });
+    return { cols:[C('Category'),C('Sub-category'),C('Orders',1),C('Tests',1),C('Unique patients',1),C('% of tests',1,'pct')], rows:Object.values(m).map(r=>[r.c,r.s,r.o,r.t,r.p.size,tot?r.t/tot*100:0]).sort((a,b)=>a[0].localeCompare(b[0])||b[3]-a[3]) }; }
+  if(k==='R5'){ const m={}; os.forEach(o=>o.items.filter(x=>x.t==='b').forEach(x=>{ const r=m[x.c]||(m[x.c]={o:0,v:0,ages:[],M:0,F:0,O:0,doc:{}}); const p=IX.P[o.pid]; r.o++; r.v+=priceOf(x); r.ages.push(ageDays(p,o.at)/365.25); r[p.g]++; const dk=docName(o.doc); r.doc[dk]=(r.doc[dk]||0)+1; }));
+    return { cols:[C('Code'),C('Bundle'),C('Orders',1),C('Value ₹',1,'inr'),C('Avg age',1),C('Male %',1,'pct'),C('Female %',1,'pct'),C('Top referring doctor')], rows:Object.entries(m).map(([c,r])=>[c,bName(c),r.o,r.v,Math.round(r.ages.reduce((a,b)=>a+b,0)/r.ages.length),r.M/r.o*100,r.F/r.o*100,Object.entries(r.doc).sort((a,b)=>b[1]-a[1])[0][0]]).sort((a,b)=>b[2]-a[2]) }; }
+  if(k==='R7'){ return { cols:[C('Registered on'),C('Patient'),C('UHID'),C('Gender'),C('Age'),C('Mobile'),C('Email'),C('City'),C('PIN'),C('First order'),C('Last order'),C('Total orders',1),C('Total tests',1),C('Registered by')],
+      rows: S.patients.filter(p=>p.at>=ctx.a && p.at<ctx.b).sort((a,b)=>b.at-a.at).map(p=>{ const po=(IX.PO[p.id]||[]).filter(o=>o.st==='active'); return [fmtD(p.at),pName(p),p.uhid,p.g,ageText(p),p.mob,p.email,p.addr.city,p.addr.pin,po.length?fmtD(po[po.length-1].at):'',po.length?fmtD(po[0].at):'',po.length,po.reduce((s,o)=>s+flatItems(o.items).length,0),uName(p.by)]; }) }; }
+  if(k==='R8'){ const m={}, pm={}; os.forEach(o=>{ const key=o.doc||'self'; const r=m[key]||(m[key]={o:0,p:new Set(),t:0,v:0,u:0,tc:{}}); r.o++; r.p.add(o.pid); r.v+=valueOf(o.items); if(o.pri==='U') r.u++; flatItems(o.items).forEach(f=>{ r.t++; r.tc[f.c]=(r.tc[f.c]||0)+1; }); }); prev.forEach(o=>{ const key=o.doc||'self'; pm[key]=(pm[key]||0)+1; });
+    return { cols:[C('Doctor'),C('Speciality'),C('Orders',1),C('Unique patients',1),C('Tests',1),C('Value ₹',1,'inr'),C('Top 3 tests'),C('Urgent %',1,'pct'),C('Change %',1,'pct')], rows:Object.entries(m).map(([k2,r])=>{ const pv=pm[k2]||0; return [k2==='self'?'Self / walk-in':docName(k2),k2==='self'?'':(IX.D[k2]?IX.D[k2].spec:''),r.o,r.p.size,r.t,r.v,Object.entries(r.tc).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>tName(x[0])).join('; '),r.u/r.o*100,pv?(r.o-pv)/pv*100:'']; }).sort((a,b)=>b[2]-a[2]) }; }
+  if(k==='R9'){ const m={}; const K=(day,u)=>{ const key=day+'|'+u; return m[key]||(m[key]={day,u,reg:0,o:0,t:0,am:0,ca:0,first:Infinity,last:0}); };
+    ctx.all.forEach(o=>{ const r=K(o.date,o.by); r.o++; r.t+=flatItems(o.items).length; r.first=Math.min(r.first,o.at); r.last=Math.max(r.last,o.at); });
+    S.patients.filter(p=>p.at>=ctx.a&&p.at<ctx.b).forEach(p=>{ K(dkey(p.at),p.by).reg++; });
+    S.audit.filter(a=>a.at>=ctx.a&&a.at<ctx.b).forEach(a=>{ if(a.action==='order.amend') K(dkey(a.at),a.actor).am++; if(a.action==='order.cancel') K(dkey(a.at),a.actor).ca++; });
+    return { cols:[C('Date'),C('Staff'),C('Patients registered',1),C('Orders created',1),C('Tests recorded',1),C('Amendments',1),C('Cancellations',1),C('First entry'),C('Last entry')], rows:Object.values(m).sort((a,b)=>b.day.localeCompare(a.day)||b.o-a.o).map(r=>[fmtD(new Date(r.day+'T00:00').getTime()),uName(r.u),r.reg,r.o,r.t,r.am,r.ca,r.first<Infinity?fmtT(r.first):'',r.last?fmtT(r.last):'']) }; }
+  if(k==='R10'){ const m={}; ctx.all.forEach(o=>{ const r=m[o.date]||(m[o.date]={o:0,t:0,n:0,rt:0,u:0,b:0,v:0,c:0,f:0}); if(o.st==='cancelled'){ r.c++; return; } r.o++; r.t+=flatItems(o.items).length; IX.first[o.pid]===o.id?r.n++:r.rt++; if(o.pri==='U') r.u++; r.b+=o.items.filter(x=>x.t==='b').length; r.v+=valueOf(o.items); if(o.email.st==='failed') r.f++; });
+    return { cols:[C('Date'),C('Orders',1),C('Tests',1),C('New patients',1),C('Returning',1),C('Urgent',1),C('Bundles sold',1),C('Value ₹',1,'inr'),C('Cancelled',1),C('Emails failed',1)], rows:Object.entries(m).sort((a,b)=>b[0].localeCompare(a[0])).map(([dk,r])=>[fmtD(new Date(dk+'T00:00').getTime()),r.o,r.t,r.n,r.rt,r.u,r.b,r.v,r.c,r.f]) }; }
+  if(k==='R11'){ return { cols:[C('Date / time'),C('Order no.'),C('Patient'),C('Action'),C('Version',1),C('Reason / detail'),C('By')], rows:S.audit.filter(a=>(a.action==='order.amend'||a.action==='order.cancel')&&a.at>=ctx.a&&a.at<ctx.b).sort((a,b)=>b.at-a.at).map(a=>{ const o=S.orders.find(x=>x.id===a.eid); return [fmtDT(a.at),o?o.no:'',o?pName(IX.P[o.pid]):'',a.action==='order.amend'?'Amended':'Cancelled',o?o.ver:'',a.text,uName(a.actor)]; }) }; }
+  if(k==='R12'){ return { cols:[C('Date / time'),C('Order no.'),C('Type'),C('Recipients'),C('Status'),C('Attempt',1),C('Note')], rows:S.emailLog.filter(e=>e.at>=ctx.a&&e.at<ctx.b).sort((a,b)=>b.at-a.at).map(e=>[fmtDT(e.at),e.no,e.type,e.to,e.st,e.n,e.note]) }; }
+  return {cols:[],rows:[]};
+}
+VIEWS.report = (d,u) => {
+  const p = d.p; const meta = REPORTS.find(r=>r[0]===p.k);
+  const B = rangeBounds(p.range||'7d');
+  const all = ordersIn(B.a,B.b,true).sort((a,b)=>b.at-a.at);
+  const os = p.incC ? all : all.filter(o=>o.st!=='cancelled');
+  const prev = ordersIn(B.pa,B.pb);
+  const data = reportData(p.k, os, {a:B.a,b:B.b,prev,all,cat:p.cat});
+  let rows = data.rows;
+  if(p.sort!=null){ const i=p.sort, dir=p.dir||1; rows = rows.slice().sort((a,b)=>{ const x=a[i],y=b[i]; return (typeof x==='number'&&typeof y==='number'?x-y:String(x).localeCompare(String(y)))*dir; }); }
+  const fmt = (v,c) => v===''||v==null ? '' : c.fmt==='inr' ? nf.format(Math.round(v)) : c.fmt==='pct' ? (typeof v==='number'?v.toFixed(1)+'%':v) : esc(v);
+  const LIMIT = 150;
+  const filters = `<div class="rfilters"><select class="inp" data-in="rp.range" data-rr="1" aria-label="Date range">${[['today','Today'],['7d','Last 7 days'],['30d','Last 30 days'],['all','All (45 days)']].map(([k2,l])=>`<option value="${k2}" ${(p.range||'7d')===k2?'selected':''}>${l}</option>`).join('')}</select>
+    ${['R2','R3'].includes(p.k)?`<select class="inp" data-in="rp.cat" data-rr="1" aria-label="Category"><option value="">All categories</option>${S.cat.cats.map(c=>`<option value="${c.code}" ${p.cat===c.code?'selected':''}>${esc(c.name)}</option>`).join('')}</select>`:''}
+    ${['R1','R2'].includes(p.k)?`<label class="row small"><input type="checkbox" data-in="rp.incC" data-rr="1" ${p.incC?'checked':''}> Include cancelled</label>`:''}
+    <span class="grow"></span><button class="btn sm" data-act="exportCsv">${ic('download','sm')}Export CSV</button></div>`;
+  const table = rows.length ? `<div class="tblw"><table class="t"><thead><tr>${data.cols.map((c,i)=>`<th class="${c.num?'n':''}"><button data-act="rsort" data-arg="${i}">${esc(c.h)}${p.sort===i?(p.dir>0?' ▲':' ▼'):''}</button></th>`).join('')}</tr></thead><tbody>${rows.slice(0,LIMIT).map(r=>`<tr>${r.map((v,i)=>`<td class="${data.cols[i].num?'n':''} ${/Tests|Recipients|Reason|Clinical|Top 3/.test(data.cols[i].h)?'wrap':''}">${fmt(v,data.cols[i])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : '<div class="list"><div class="empty">No rows for this period. Try a longer date range.</div></div>';
+  return { title: `${p.k} · ${meta[1]}`, sub: d.mode==='tablet'?meta[2]:'', body: filters + `<div class="small muted" style="margin:0 2px 8px">${rows.length} row${rows.length===1?'':'s'}${rows.length>LIMIT?` · showing the first ${LIMIT}. Export CSV for all rows.`:''}</div>` + table };
+};
+
+/* ================= admin: catalogue, doctors, users, settings, audit ================= */
+VIEWS.catalogue = (d,u) => {
+  const tab = d.p.tab || 'tests';
+  const tabs = `<div class="tabs"><button class="${tab==='tests'?'on':''}" data-act="ctab" data-arg="tests">Tests</button><button class="${tab==='bundles'?'on':''}" data-act="ctab" data-arg="bundles">Bundles</button></div>`;
+  if(tab==='bundles'){
+    const body = tabs + `<div class="row" style="margin-bottom:12px"><span class="grow small muted">${S.cat.bundles.length} bundles · ${S.cat.bundles.filter(b=>b.active).length} active</span><button class="btn sm pri" data-act="editBundle" data-arg="">${ic('plus','sm')}New bundle</button></div><div class="list">${S.cat.bundles.map(b=>{ const sum=b.tests.reduce((s,c)=>s+(IX.T[c]?IX.T[c].t.price:0),0); const dead=b.tests.filter(c=>!isActiveTest(c)); return `<div class="li"><span class="grow"><div class="t">${esc(b.name)} <span class="mono small muted">${b.code}</span></div><div class="m">${b.tests.length} tests · ${inr(b.price)} · sum ${inr(sum)} · ${pct(sum-b.price,sum)}% off</div>${dead.length?`<div class="small" style="color:var(--a-warn)">${dead.length} inactive test(s) in this bundle</div>`:''}</span><button class="btn sm" data-act="editBundle" data-arg="${b.code}">Edit</button><button class="sw" role="switch" aria-checked="${b.active}" aria-label="Active" data-act="bActive" data-arg="${b.code}"></button></div>`; }).join('')}</div>`;
+    return { title:'Test catalogue', body };
+  }
+  const body = tabs + `<div class="row" style="margin-bottom:12px;flex-wrap:wrap"><div class="search grow" style="min-width:200px">${ic('search')}<input class="inp" id="${d.key}-cq" data-in="cq" value="${esc(d.cq||'')}" placeholder="Find a test by name or code" aria-label="Find test"></div><button class="btn sm pri" data-act="editTest" data-arg="">${ic('plus','sm')}New test</button><button class="btn sm" data-act="toastMsg" data-arg="CSV import would validate each row and show errors before saving.">Import CSV</button></div><div data-region="ctree">${catTree(d)}</div>`;
+  return { title:'Test catalogue', sub: d.mode==='tablet' ? 'Categories, sub-categories, tests and bundles' : '', body };
+};
+function catTree(d){
+  const q=(d.cq||'').trim().toLowerCase(); const open = d.copen || (d.copen={});
+  return `<div class="list">${S.cat.cats.map(c=>{
+    const tests = c.subs.flatMap(s=>s.tests);
+    const match = q ? tests.filter(t=>(t.code+' '+t.name).toLowerCase().includes(q)) : null;
+    if(q && !match.length) return '';
+    const isOpen = q ? true : open[c.code];
+    return `<div class="catbtn" style="cursor:default"><button class="link row" style="color:var(--a-ink)!important;gap:8px" data-act="copen" data-arg="${c.code}" aria-expanded="${!!isOpen}">${ic(isOpen?'down':'chev','sm')}${esc(c.name)} <span class="mono small muted">${c.code}</span></button><span class="cnt">${tests.filter(t=>t.active).length}/${tests.length} active</span><button class="sw" role="switch" aria-checked="${c.active}" aria-label="Category active" data-act="cActive" data-arg="${c.code}"></button></div>
+    ${isOpen?c.subs.map(s=>{ const ts = s.tests.filter(t=>!q||(t.code+' '+t.name).toLowerCase().includes(q)); if(!ts.length) return ''; return `<div class="subh row" style="justify-content:space-between">${esc(s.name)} <span class="mono" style="color:var(--a-muted);letter-spacing:0">${s.code}</span><span class="grow"></span><button class="sw" role="switch" aria-checked="${s.active}" aria-label="Sub-category active" data-act="sActive" data-arg="${s.code}"></button></div>${ts.map(t=>`<div class="pitem" style="${t.active?'':'opacity:.55'}"><div class="grow"><div class="nm">${esc(t.name)}</div><div class="mt"><span class="mono">${t.code}</span>${tubeChip(t.sample)}<span>${t.tat} h</span><span class="num">${inr(t.price)}</span>${t.active?'':'<span class="chip">Inactive</span>'}</div></div><button class="btn sm" data-act="editTest" data-arg="${t.code}">Edit</button><button class="sw" role="switch" aria-checked="${t.active}" aria-label="Test active" data-act="tActive" data-arg="${t.code}"></button></div>`).join('')}`; }).join(''):''}`;
+  }).join('') || '<div class="empty">No test matches.</div>'}</div>`;
+}
+VIEWS.doctors = (d,u) => {
+  const ord = {}; S.orders.forEach(o=>{ if(o.doc) ord[o.doc]=(ord[o.doc]||0)+1; });
+  const ds = S.doctors.slice().sort((a,b)=>(a.verified-b.verified)||a.name.localeCompare(b.name));
+  return { title:'Referring doctors', body:`<div class="row" style="margin-bottom:12px"><span class="grow small muted">${ds.length} doctors · ${ds.filter(x=>!x.verified).length} unverified</span><button class="btn sm pri" data-act="editDoctor" data-arg="">${ic('plus','sm')}Add doctor</button></div><div class="list">${ds.map(x=>`<div class="li"><span class="avatar">${initials(x.name)}</span><span class="grow"><div class="t">${esc(x.name)} ${x.verified?'':'<span class="chip warn">Unverified</span>'}</div><div class="m">${esc(x.spec||'Speciality not set')} · ${ord[x.id]||0} orders${x.mob?' · '+x.mob:''}</div></span>${x.verified?`<button class="btn sm" data-act="editDoctor" data-arg="${x.id}">Edit</button>`:`<button class="btn sm pri" data-act="editDoctor" data-arg="${x.id}">Verify</button>`}</div>`).join('')}</div>` };
+};
+VIEWS.users = (d,u) => ({ title:'Users', body:`<div class="row" style="margin-bottom:12px"><span class="grow small muted">${S.users.length} users</span><button class="btn sm pri" data-act="addUser">${ic('userplus','sm')}Add user</button></div><div class="list">${S.users.map(x=>`<div class="li" style="${x.active?'':'opacity:.6'}"><span class="avatar">${initials(x.name)}</span><span class="grow"><div class="t">${esc(x.name)} ${x.role==='admin'?'<span class="chip dark">Admin</span>':'<span class="chip">Staff</span>'} ${x.active?'':'<span class="chip bad">Deactivated</span>'}</div><div class="m">${esc(x.title||'')} · ${esc(x.email)}</div></span>${x.id===u.id?'<span class="small muted">You</span>':`<button class="sw" role="switch" aria-checked="${x.active}" aria-label="Active" data-act="uActive" data-arg="${x.id}"></button>`}</div>`).join('')}</div><p class="small muted" style="margin-top:12px">Deactivating a user signs them out on every device. Past records keep their name.</p>` });
+VIEWS.settings = (d,u) => {
+  const e = S.settings.email; const err = d.setErr || {};
+  const chipList = (key,arr) => `<div class="chips">${arr.map((a,i)=>`<span class="chip">${esc(a)}<button data-act="setDel" data-arg="${key}:${i}" aria-label="Remove ${esc(a)}">${ic('x','sm')}</button></span>`).join('')||'<span class="small muted">None</span>'}</div><div class="addrow"><input class="inp" id="${d.key}-set-${key}" data-in="setIn.${key}" value="${esc((d.setIn||{})[key]||'')}" placeholder="${key==='domains'?'e.g. '+DOMAIN:'name@'+DOMAIN}" aria-label="Add ${key}"><button class="btn" data-act="setAdd" data-arg="${key}">Add</button></div>${err[key]?`<div class="err small" style="color:var(--a-bad);margin-top:4px">${esc(err[key])}</div>`:''}`;
+  return { title:'Settings', body:`<div class="stack">
+    <div class="card"><b>Order email recipients</b><p class="small muted" style="margin:4px 0 10px">Every saved, amended or cancelled order is emailed to these addresses. Patients are never emailed.</p><div class="flabel">To</div>${chipList('to',e.to)}<div class="flabel" style="margin-top:14px">CC</div>${chipList('cc',e.cc)}</div>
+    <div class="card"><b>Allowed email domains</b><p class="small muted" style="margin:4px 0 10px">Recipients must belong to one of these domains, because the email contains patient health data.</p>${chipList('domains',e.domains)}</div>
+    <div class="card"><b>Lab</b><dl class="kv" style="margin-top:8px"><dt>Name</dt><dd>${esc(S.settings.lab.name)}</dd><dt>Order prefix</dt><dd class="mono">${S.settings.lab.prefix}-YYYYMMDD-NNNN</dd><dt>Time zone</dt><dd>Asia/Kolkata (IST)</dd><dt>Data region</dt><dd>asia-south1 (Mumbai)</dd><dt>Session timeout</dt><dd>30 minutes</dd></dl></div></div>` };
+};
+VIEWS.audit = (d,u) => {
+  const LBL = {'order.create':'Order created','order.amend':'Order amended','order.cancel':'Order cancelled','patient.create':'Patient registered','patient.update':'Patient edited','email.send':'Email sent','test.update':'Test updated','test.create':'Test created','bundle.update':'Bundle updated','bundle.create':'Bundle created','category.update':'Category updated','user.create':'User created','user.update':'User updated','settings.update':'Settings changed','doctor.update':'Doctor updated','doctor.create':'Doctor added','auth.login':'Signed in'};
+  const rows = S.audit.slice().sort((a,b)=>b.at-a.at).slice(0,150);
+  return { title:'Audit log', sub: d.mode==='tablet'?'Read-only. Entries cannot be edited or deleted.':'', body:`<div class="list">${rows.map(a=>`<div class="li"><span class="grow"><div class="t" style="font-size:14px">${esc(LBL[a.action]||a.action)}</div><div class="small" style="color:var(--a-ink)">${esc(a.text)}</div><div class="m">${fmtDT(a.at)} · ${esc(uName(a.actor))}</div></span></div>`).join('')}</div>` };
+};
+
+/* ================= modals ================= */
+function modalView(d){
+  const m = d.modal; let head='', body='', foot='';
+  const close = `<button class="iconbtn" data-act="closeModal" aria-label="Close">${ic('x')}</button>`;
+  if(m.type==='email'){
+    const o = S.orders.find(x=>x.id===m.id); const em = buildEmail(o); const e=o.email;
+    head = `<b>Email preview</b>${close}`;
+    body = `<div class="note info">${ic('bolt','sm')} Prototype only: email delivery is not connected yet. <b>Send</b> marks the email as sent and adds it to the delivery log.</div>
+      <dl class="mailhdr"><dt>From</dt><dd>PathDesk &lt;no-reply@${DOMAIN}&gt;</dd><dt>To</dt><dd>${esc(em.to.join(', '))||'<span style="color:var(--a-bad)">No recipients. Add one in Settings.</span>'}</dd><dt>CC</dt><dd>${esc(em.cc.join(', '))||'—'}</dd><dt>Subject</dt><dd><b>${esc(em.subject)}</b></dd></dl><pre class="mailbody">${esc(em.text)}</pre>`;
+    const u = me(d);
+    foot = e.st==='sent'
+      ? `<span class="small muted grow" style="align-self:center">Sent ${fmtDT(e.at)}</span>${u.role==='admin'?`<button class="btn" data-act="sendEmail" data-arg="${o.id}">Resend</button>`:''}<button class="btn pri" data-act="closeModal">Done</button>`
+      : `<button class="btn" data-act="closeModal">Later</button><button class="btn pri" data-act="sendEmail" data-arg="${o.id}">${ic('mail','sm')}Send email</button>`;
+  } else if(m.type==='cancel'){
+    const o = S.orders.find(x=>x.id===m.id);
+    head = `<b>Cancel ${o.no}?</b>${close}`;
+    body = `<p style="margin-top:0">The order stays in the system as <b>Cancelled</b> and is left out of dashboard counts. A cancellation email goes to the lab.</p><div class="field ${m.err?'bad':''}"><label for="${d.key}-creason">Reason *</label><textarea class="inp" id="${d.key}-creason" data-in="m.reason" rows="3" placeholder="e.g. Duplicate entry">${esc(m.reason||'')}</textarea>${m.err?'<div class="err">Enter a reason for cancelling.</div>':''}</div>`;
+    foot = `<button class="btn" data-act="closeModal">Keep order</button><button class="btn pri" style="background:var(--a-bad);border-color:var(--a-bad)" data-act="confirmCancel" data-arg="${o.id}">Cancel order</button>`;
+  } else if(m.type==='test'){
+    const f = m.f; head = `<b>${m.isNew?'New test':'Edit '+esc(f.code)}</b>${close}`;
+    const subs = S.cat.cats.flatMap(c=>c.subs.map(s=>[s.code,c.name+' › '+s.name]));
+    body = `<div class="fgrid">
+      ${m.isNew?`<div class="field wide"><label for="${d.key}-m-sub">Sub-category</label><select class="inp" id="${d.key}-m-sub" data-in="m.f.sub">${subs.map(([k,l])=>`<option value="${k}" ${f.sub===k?'selected':''}>${esc(l)}</option>`).join('')}</select></div>`:`<div class="field wide"><span class="flabel">Code</span><div class="mono">${f.code} <span class="small muted">(cannot be changed)</span></div></div>`}
+      <div class="field wide ${m.err?'bad':''}"><label for="${d.key}-m-name">Test name *</label><input class="inp" id="${d.key}-m-name" data-in="m.f.name" value="${esc(f.name)}">${m.err?`<div class="err">${esc(m.err)}</div>`:''}</div>
+      <div class="field"><label for="${d.key}-m-sample">Sample type</label><select class="inp" id="${d.key}-m-sample" data-in="m.f.sample">${Object.keys(RAW.sampleTypes).map(s=>`<option ${f.sample===s?'selected':''}>${esc(s)}</option>`).join('')}</select></div>
+      <div class="field"><label for="${d.key}-m-tat">Turnaround (hours)</label><input class="inp" id="${d.key}-m-tat" type="number" min="1" data-in="m.f.tat" value="${f.tat}"></div>
+      <div class="field"><label for="${d.key}-m-price">List price (₹)</label><input class="inp" id="${d.key}-m-price" type="number" min="0" data-in="m.f.price" value="${f.price}"></div>
+      <div class="field"><span class="flabel">Active</span><button class="sw" role="switch" aria-checked="${f.active}" data-act="mToggle" data-arg="active"></button></div></div>`;
+    foot = `<button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="saveTest">Save test</button>`;
+  } else if(m.type==='bundle'){
+    const f = m.f; const sum=f.tests.reduce((s,c)=>s+(IX.T[c]?IX.T[c].t.price:0),0);
+    head = `<b>${m.isNew?'New bundle':'Edit '+esc(f.code)}</b>${close}`;
+    body = `<div class="fgrid"><div class="field wide ${m.err?'bad':''}"><label for="${d.key}-mb-name">Bundle name *</label><input class="inp" id="${d.key}-mb-name" data-in="m.f.name" value="${esc(f.name)}">${m.err?`<div class="err">${esc(m.err)}</div>`:''}</div>
+      <div class="field"><label for="${d.key}-mb-price">Bundle price (₹)</label><input class="inp" id="${d.key}-mb-price" type="number" min="0" data-in="m.f.price" data-rr2="1" value="${f.price}"></div>
+      <div class="field"><span class="flabel">Sum of tests · discount</span><div style="padding-top:10px" data-region="bsum">${inr(sum)} · ${pct(sum-f.price,sum)}% off</div></div>
+      <div class="field wide"><span class="flabel">Tests in bundle (${f.tests.length})</span><div class="list">${f.tests.map(c=>`<div class="pitem"><div class="grow"><div class="nm">${esc(tName(c))}</div><div class="mt"><span class="mono">${c}</span>${isActiveTest(c)?'':'<span class="chip warn">Inactive</span>'}<span>${inr(IX.T[c]?IX.T[c].t.price:0)}</span></div></div><button class="add" data-act="mbDel" data-arg="${c}" aria-label="Remove">${ic('x','sm')}</button></div>`).join('')||'<div class="empty">No tests yet.</div>'}</div>
+      <select class="inp" style="margin-top:8px" data-in="m.addTest" aria-label="Add a test"><option value="">+ Add a test…</option>${S.cat.cats.map(c=>`<optgroup label="${esc(c.name)}">${c.subs.flatMap(s=>s.tests).filter(t=>t.active&&!f.tests.includes(t.code)).map(t=>`<option value="${t.code}">${esc(t.name)} (${t.code})</option>`).join('')}</optgroup>`).join('')}</select></div>
+      <div class="field"><span class="flabel">Active</span><button class="sw" role="switch" aria-checked="${f.active}" data-act="mToggle" data-arg="active"></button></div></div>`;
+    foot = `<button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="saveBundle">Save bundle</button>`;
+  } else if(m.type==='doctor'){
+    const f=m.f; head = `<b>${m.isNew?'Add doctor':f.verified?'Edit doctor':'Verify doctor'}</b>${close}`;
+    body = `${!m.isNew&&!f.verified?'<div class="note" style="margin-bottom:12px">Staff typed this name during order entry. Check the details, then verify.</div>':''}<div class="fgrid"><div class="field wide ${m.err?'bad':''}"><label for="${d.key}-md-name">Name *</label><input class="inp" id="${d.key}-md-name" data-in="m.f.name" value="${esc(f.name)}">${m.err?`<div class="err">${esc(m.err)}</div>`:''}</div><div class="field"><label for="${d.key}-md-spec">Speciality</label><input class="inp" id="${d.key}-md-spec" data-in="m.f.spec" value="${esc(f.spec)}"></div><div class="field"><label for="${d.key}-md-mob">Mobile</label><input class="inp" id="${d.key}-md-mob" data-in="m.f.mob" value="${esc(f.mob)}" inputmode="numeric" maxlength="10"></div></div>`;
+    foot = `<button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="saveDoctor">${!m.isNew&&!f.verified?'Verify & save':'Save'}</button>`;
+  } else if(m.type==='user'){
+    const f=m.f; head = `<b>Add user</b>${close}`;
+    body = `<div class="fgrid"><div class="field wide ${m.err?'bad':''}"><label for="${d.key}-mu-name">Full name *</label><input class="inp" id="${d.key}-mu-name" data-in="m.f.name" value="${esc(f.name)}"></div><div class="field wide ${m.err?'bad':''}"><label for="${d.key}-mu-email">Work email *</label><input class="inp" id="${d.key}-mu-email" data-in="m.f.email" value="${esc(f.email)}" placeholder="name@${DOMAIN}">${m.err?`<div class="err">${esc(m.err)}</div>`:''}</div><div class="field"><label for="${d.key}-mu-title">Job title</label><input class="inp" id="${d.key}-mu-title" data-in="m.f.title" value="${esc(f.title)}"></div><div class="field"><span class="flabel">Role</span><div class="seg">${[['staff','Staff'],['admin','Admin']].map(([k,l])=>`<button type="button" class="${f.role===k?'on':''}" data-act="mSet" data-arg="role:${k}">${l}</button>`).join('')}</div></div></div><p class="small muted">The user gets an email with a link to set their password.</p>`;
+    foot = `<button class="btn" data-act="closeModal">Cancel</button><button class="btn pri" data-act="saveUser">Create user</button>`;
+  }
+  return `<div class="modal" data-act="backdrop"><div class="sheet" role="dialog" aria-modal="true"><div class="mhead">${head}</div><div class="mbody">${body}</div><div class="mfoot">${foot}</div></div></div>`;
+}
+function buildEmail(o){
+  const p = IX.P[o.pid]; const e=o.email; const type=e.type||'new'; const f=flatItems(o.items); const sm=samplesOf(o.items);
+  const pre = type==='amended' ? `[AMENDED v${o.ver}]` : type==='cancelled' ? '[CANCELLED]' : (o.pri==='U'?'[URGENT]':'');
+  const subject = type==='cancelled' ? `${pre}[Lab Order] ${o.no}` : `${pre}[Lab Order] ${o.no} · ${f.length} test${f.length===1?'':'s'}${o.pri==='U'&&type==='new'?'':' · '+(o.pri==='U'?'Urgent':'Routine')}`;
+  const L = (k,v) => (k+'               ').slice(0,15)+v;
+  const doc = o.doc && IX.D[o.doc] ? IX.D[o.doc].name+(IX.D[o.doc].spec?' ('+IX.D[o.doc].spec+')':'') : 'Self / walk-in';
+  const nB = o.items.filter(x=>x.t==='b').length, nT = o.items.filter(x=>x.t==='t').length;
+  const lines = [];
+  lines.push(type==='amended'?`Test order AMENDED (version ${o.ver})`:type==='cancelled'?'Test order CANCELLED':'New test order recorded','');
+  lines.push(L('Order no.',o.no), L('Date / time',fmtDT(o.at)+' IST'), L('Priority',o.pri==='U'?'URGENT':'Routine'), L('Registered by',uName(o.by)));
+  if(type==='cancelled') lines.push(L('Reason',o.cancelReason||''));
+  if(type==='amended' && o.hist && o.hist.length) lines.push(L('Reason',o.hist[o.hist.length-1].reason||''));
+  lines.push('','PATIENT', L('Name',pName(p)), L('Gender / Age',gText(p.g)+' / '+ageText(p,o.at)), L('Mobile',mask(p.mob)), L('UHID',p.uhid||'—'), L('Ref. doctor',doc));
+  if(type!=='cancelled'){
+    lines.push('',`TESTS (${f.length} test${f.length===1?'':'s'}${nB?` from ${nB} bundle${nB>1?'s':''}`:''}${nB&&nT?` + ${nT} test${nT>1?'s':''}`:''})`);
+    const row = (n,s,c,ind) => ((ind?'  - ':'')+n+'                                        ').slice(0,38)+' '+(s+'          ').slice(0,10)+c;
+    o.items.forEach(x=>{ if(x.t==='b'){ lines.push(row(bName(x.c),'',x.c,false)); (x.ts||IX.B[x.c].tests).forEach(c=>lines.push(row(tName(c),IX.T[c]?IX.T[c].t.sample:'',c,true))); } else lines.push(row(tName(x.c),IX.T[x.c]?IX.T[x.c].t.sample:'',x.c,false)); });
+    lines.push('', L('Samples needed',Object.entries(sm).map(([s,n])=>`${s} (${n})`).join(' · ')));
+  }
+  lines.push(L('Clinical notes',o.notes||'—'), '', `Open in app: https://pathdesk.${DOMAIN}/orders/${o.no}  (sign-in required)`, '— Automated message from PathDesk. Do not reply.');
+  return { subject, to:S.settings.email.to.slice(), cc:S.settings.email.cc.slice(), text: lines.join('\n') };
+}
+
+/* ================= actions ================= */
+const ACT = {
+  back: d => back(d),
+  nav: (d,r) => { if(r==='orders') d.olq=''; go(d,r,{},{root:true}); },
+  login: (d,id) => { d.user=id; d.hist=[]; d.route=defaultRoute(IX.U[id]); d.p={}; audit(d,'auth.login','user',id,`${uName(id)} signed in on ${d.key}`); save(); render(d); toast(d,`Signed in as ${uName(id)}`); },
+  loginForm: (d) => { const em=(d.screen.querySelector(`#${d.key}-lem`)||{}).value||''; const u=S.users.find(x=>x.email.toLowerCase()===em.trim().toLowerCase()&&x.active); if(u) ACT.login(d,u.id); else toast(d,'Enter the email of an active user, or tap a demo account below.','warn'); },
+  logout: d => { d.user=null; d.hist=[]; d.modal=null; d.route='home'; render(d); },
+  toastMsg: (d,m) => toast(d,m),
+  newPatient: d => { const q=(d.q||'').trim(); const digits=q.replace(/\D/g,''); d.form={fn:/^\d/.test(q)?'':q.split(' ')[0]||'',ln:/^\d/.test(q)?'':q.split(' ').slice(1).join(' '),mob:/^\d{10}$/.test(digits)?digits:'',g:'',dobMode:'age',dob:'',age:'',ageUnit:'years',uhid:'',email:'',line:'',city:'Mumbai',pin:'',consent:false}; d.formErr={}; go(d,'patientForm'); },
+  editPatient: (d,id) => { const p=IX.P[id]; d.form={id,fn:p.fn,ln:p.ln,mob:p.mob,g:p.g,dobMode:'dob',dob:dkey(p.dob),age:'',ageUnit:'years',uhid:p.uhid,email:p.email,line:p.addr.line,city:p.addr.city,pin:p.addr.pin,consent:true,est:p.est}; d.formErr={}; go(d,'patientForm'); },
+  fset: (d,a) => { const [k,v]=a.split(':'); d.form[k]=v; render(d); },
+  useExisting: (d,id) => go(d,'patient',{id},{replace:true}),
+  savePatient: d => {
+    const f=d.form, e={};
+    if(!f.fn.trim()) e.fn='Enter the first name.';
+    if(!/^[6-9]\d{9}$/.test(f.mob||'')) e.mob='Enter a 10-digit Indian mobile number starting with 6–9.';
+    if(!f.g) e.g='Choose a gender.';
+    let dob=null, est=false;
+    if(f.dobMode==='dob'){ if(!f.dob) e.dob='Enter the date of birth, or switch to Age.'; else { dob=new Date(f.dob+'T00:00').getTime(); if(dob>Date.now()) e.dob='Date of birth cannot be in the future.'; est = f.id ? !!f.est && dkey(IX.P[f.id].dob)===f.dob : false; } }
+    else { const a=parseFloat(f.age); if(!(a>=0&&a<=120)) e.dob='Enter an age between 0 and 120.'; else { const days = f.ageUnit==='years'?a*365.25+182:f.ageUnit==='months'?a*30.44+15:a; dob=Date.now()-days*DAY; est=true; } }
+    if(f.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email)) e.email='Enter a valid email address, or leave it blank.';
+    if(f.pin && !/^\d{6}$/.test(f.pin)) e.pin='PIN code has 6 digits.';
+    if(!f.id && !f.consent) e.consent='Patient consent is required to register.';
+    d.formErr=e;
+    if(Object.keys(e).length){ render(d); toast(d,'Check the highlighted fields.','bad'); return; }
+    const data={fn:f.fn.trim(),ln:(f.ln||'').trim(),mob:f.mob,g:f.g,dob,est,uhid:(f.uhid||'').trim().toUpperCase(),email:(f.email||'').trim(),addr:{line:(f.line||'').trim(),city:(f.city||'').trim(),state:'Maharashtra',pin:f.pin||''}};
+    if(f.id){ const p=IX.P[f.id]; Object.assign(p,data); audit(d,'patient.update','patient',p.id,`Edited details of ${pName(p)}`); commit(d,'Patient updated'); go(d,'patient',{id:p.id},{replace:true}); toast(d,'Patient details saved'); }
+    else { const p={id:uid('p'),...data,consent:Date.now(),at:Date.now(),by:d.user}; S.patients.push(p); audit(d,'patient.create','patient',p.id,`Registered ${pName(p)}`); commit(d,`Patient ${pName(p)} registered`); go(d,'patient',{id:p.id},{replace:true}); startOrder(d,p.id); toast(d,'Patient registered. Now select tests.'); }
+  },
+  openPatient: (d,id) => go(d,'patient',{id}),
+  startOrder: (d,id) => startOrder(d,id),
+  repeatOrder: (d,id) => { const last=(IX.PO[id]||[]).find(o=>o.st==='active'); startOrder(d,id); if(last){ d.draft.items=last.items.filter(x=>x.t==='t'?isActiveTest(x.c):IX.B[x.c]&&IX.B[x.c].active).map(x=>({t:x.t,c:x.c})); d.draft.doc=last.doc||''; render(d); toast(d,`Copied ${d.draft.items.length} item(s) from ${last.no}`); } },
+  ocat: (d,c) => { d.ocat = d.ocat===c?null:c; region(d,'pick',pickerList(d)); },
+  toggleItem: (d,a) => { toggleItem(d,a); render(d); },
+  ostep: d => { d.draft.step='details'; render(d); const sc=d.screen.querySelector('.scroll'); if(sc) sc.scrollTop=0; },
+  ostepBack: d => { d.draft.step='pick'; render(d); },
+  dset: (d,a) => { const [k,v]=a.split(':'); d.draft[k]=v; render(d); },
+  saveOrder: d => saveOrder(d),
+  openOrder: (d,id) => go(d,'orderView',{id}),
+  previewEmail: (d,id) => { d.modal={type:'email',id}; render(d); },
+  sendEmail: (d,id) => {
+    const o=S.orders.find(x=>x.id===id); const to=S.settings.email.to, cc=S.settings.email.cc;
+    if(!to.length){ toast(d,'Add at least one recipient in Settings first.','bad'); return; }
+    const resend = o.email.st==='sent';
+    o.email={st:'sent',type:o.email.type||'new',at:Date.now(),n:(o.email.n||0)+1};
+    S.emailLog.push({at:Date.now(),oid:o.id,no:o.no,type:resend?'resend':o.email.type,to:to.concat(cc).join(', '),st:'sent',n:o.email.n,note:'Simulated send (prototype)'});
+    audit(d,'email.send','order',o.id,`${resend?'Resent':'Sent'} ${o.email.type} email for ${o.no} to ${to.length+cc.length} recipient(s)`);
+    d.modal=null; commit(d,`Email for ${o.no} sent`); toast(d,`Email marked as sent to ${to.length+cc.length} recipient(s). Simulated, nothing was delivered.`);
+  },
+  closeModal: d => { d.modal=null; render(d); },
+  backdrop: (d,a,el,ev) => { if(ev && ev.target===el){ d.modal=null; render(d); } },
+  amendOrder: (d,id) => { const o=S.orders.find(x=>x.id===id); d.draft={pid:o.pid,items:o.items.map(x=>({t:x.t,c:x.c,p:x.p,ts:x.ts})),doc:o.doc||'',docNew:'',pri:o.pri,notes:o.notes,amendOf:o.id,reason:'',step:'pick'}; d.oq=''; d.ocat=null; go(d,'order'); },
+  cancelOrder: (d,id) => { d.modal={type:'cancel',id,reason:''}; render(d); },
+  confirmCancel: (d,id) => { const m=d.modal; if(!(m.reason||'').trim()){ m.err=true; render(d); return; } const o=S.orders.find(x=>x.id===id); o.st='cancelled'; o.cancelReason=m.reason.trim(); o.email={st:'draft',type:'cancelled'}; audit(d,'order.cancel','order',o.id,`Cancelled ${o.no}: ${o.cancelReason}`); commit(d,`Order ${o.no} cancelled`); d.modal={type:'email',id:o.id}; render(d); },
+  drange: (d,r) => { d.p={...d.p,range:r}; render(d); },
+  orange: (d,r) => { d.p={...d.p,range:r}; render(d); },
+  drill: (d,cat) => go(d,'report',{k:'R2',range:(d.p&&d.p.range)||'7d',cat}),
+  openReport: (d,k) => { if(k==='R6'){ go(d,'home',{},{root:true}); toast(d,'Search for a patient to see their full history.'); setTimeout(()=>{ const i=d.screen.querySelector(`#${d.key}-psearch`); if(i) i.focus(); },50); return; } go(d,'report',{k,range:'7d'}); },
+  rsort: (d,i) => { i=+i; d.p={...d.p, dir: d.p.sort===i ? -(d.p.dir||1) : -1, sort:i}; render(d); },
+  exportCsv: d => {
+    const p=d.p; const B=rangeBounds(p.range||'7d'); const all=ordersIn(B.a,B.b,true).sort((a,b)=>b.at-a.at); const os=p.incC?all:all.filter(o=>o.st!=='cancelled');
+    const data=reportData(p.k,os,{a:B.a,b:B.b,prev:ordersIn(B.pa,B.pb),all,cat:p.cat});
+    const q=v=>{ v=v==null?'':typeof v==='number'?(Math.round(v*100)/100):v; v=String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+    const csv='﻿'+[data.cols.map(c=>q(c.h)).join(',')].concat(data.rows.map(r=>r.map(q).join(','))).join('\r\n');
+    try { const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=`${p.k}-${(REPORTS.find(r=>r[0]===p.k)[1]).replace(/\W+/g,'-')}-${dkey(Date.now())}.csv`; document.body.appendChild(a); a.click(); a.remove(); toast(d,`Exported ${data.rows.length} rows to CSV`); } catch(e){ toast(d,'Export is not available in this viewer.','warn'); }
+  },
+  ctab: (d,t) => { d.p={...d.p,tab:t}; render(d); },
+  copen: (d,c) => { d.copen=d.copen||{}; d.copen[c]=!d.copen[c]; region(d,'ctree',catTree(d)); },
+  cActive: (d,c) => { const x=IX.C[c]; x.active=!x.active; audit(d,'category.update','category',c,`${x.active?'Activated':'Deactivated'} category ${x.name}`); commit(d,`Category ${x.name} ${x.active?'activated':'deactivated'}`); },
+  sActive: (d,c) => { const x=IX.SB[c]; x.active=!x.active; audit(d,'category.update','subcategory',c,`${x.active?'Activated':'Deactivated'} sub-category ${x.name}`); commit(d,`Sub-category ${x.name} ${x.active?'activated':'deactivated'}`); },
+  tActive: (d,c) => { const t=IX.T[c].t; t.active=!t.active; audit(d,'test.update','test',c,`${t.active?'Activated':'Deactivated'} ${t.name}`); commit(d,`${t.name} ${t.active?'activated':'deactivated'}`); if(!t.active){ const bs=S.cat.bundles.filter(b=>b.active&&b.tests.includes(c)); if(bs.length) toast(d,`${t.name} is in ${bs.length} active bundle(s): ${bs.map(b=>b.name).join(', ')}. Review them.`,'warn'); } },
+  bActive: (d,c) => { const b=IX.B[c]; b.active=!b.active; audit(d,'bundle.update','bundle',c,`${b.active?'Activated':'Deactivated'} bundle ${b.name}`); commit(d,`Bundle ${b.name} ${b.active?'activated':'deactivated'}`); },
+  editTest: (d,c) => { const x=c?IX.T[c]:null; d.modal={type:'test',isNew:!c,f: x?{code:c,name:x.t.name,sample:x.t.sample,tat:x.t.tat,price:x.t.price,active:x.t.active,sub:x.s.code}:{code:'',name:'',sample:'Serum',tat:24,price:500,active:true,sub:'BIO-DIA'}}; render(d); },
+  mToggle: (d,k) => { d.modal.f[k]=!d.modal.f[k]; render(d); },
+  mSet: (d,a) => { const [k,v]=a.split(':'); d.modal.f[k]=v; render(d); },
+  saveTest: d => { const m=d.modal, f=m.f; if(!f.name.trim()){ m.err='Enter a test name.'; render(d); return; }
+    if(m.isNew){ const s=IX.SB[f.sub]; const c=S.cat.cats.find(x=>x.subs.includes(s)); const nums=Object.keys(IX.T).filter(k=>k.startsWith(c.code)).map(k=>+k.slice(3)); const code=c.code+String(Math.max(0,...nums)+1).padStart(3,'0'); s.tests.push({code,name:f.name.trim(),sample:f.sample,tat:+f.tat||24,price:+f.price||0,active:f.active}); audit(d,'test.create','test',code,`Created test ${code} ${f.name.trim()} in ${s.name}`); d.modal=null; commit(d,`Test ${code} created`); toast(d,`Test ${code} created`); }
+    else { const t=IX.T[f.code].t; const ch=[]; if(t.price!==+f.price) ch.push(`price ${inr(t.price)} → ${inr(+f.price)}`); if(t.name!==f.name.trim()) ch.push('name'); if(t.tat!==+f.tat) ch.push(`TAT ${t.tat} h → ${+f.tat} h`); if(t.sample!==f.sample) ch.push(`sample ${t.sample} → ${f.sample}`); if(t.active!==f.active) ch.push(f.active?'activated':'deactivated'); Object.assign(t,{name:f.name.trim(),sample:f.sample,tat:+f.tat||t.tat,price:+f.price||0,active:f.active}); audit(d,'test.update','test',f.code,`Updated ${t.name}: ${ch.join(', ')||'no changes'}`); d.modal=null; commit(d,`Test ${f.code} updated`); toast(d,'Test saved. Existing orders keep their original details.'); } },
+  editBundle: (d,c) => { const b=c?IX.B[c]:null; d.modal={type:'bundle',isNew:!c,f:b?{code:c,name:b.name,price:b.price,tests:b.tests.slice(),active:b.active}:{code:'',name:'',price:999,tests:[],active:true}}; render(d); },
+  mbDel: (d,c) => { d.modal.f.tests=d.modal.f.tests.filter(x=>x!==c); render(d); },
+  saveBundle: d => { const m=d.modal,f=m.f; if(!f.name.trim()){ m.err='Enter a bundle name.'; render(d); return; } if(f.tests.length<2){ m.err='A bundle needs at least 2 tests.'; render(d); return; }
+    if(m.isNew){ const code='PKG'+String(Math.max(0,...S.cat.bundles.map(b=>+b.code.slice(3)))+1).padStart(2,'0'); S.cat.bundles.push({code,name:f.name.trim(),price:+f.price||0,tests:f.tests.slice(),active:f.active}); audit(d,'bundle.create','bundle',code,`Created bundle ${code} ${f.name.trim()}`); d.modal=null; commit(d,`Bundle ${code} created`); toast(d,`Bundle ${code} created`); }
+    else { Object.assign(IX.B[f.code],{name:f.name.trim(),price:+f.price||0,tests:f.tests.slice(),active:f.active}); audit(d,'bundle.update','bundle',f.code,`Updated bundle ${f.name.trim()} (${f.tests.length} tests, ${inr(+f.price)})`); d.modal=null; commit(d,`Bundle ${f.code} updated`); toast(d,'Bundle saved'); } },
+  editDoctor: (d,id) => { const x=id?IX.D[id]:null; d.modal={type:'doctor',isNew:!id,f:x?{...x}:{name:'Dr. ',spec:'',mob:'',verified:true,active:true}}; render(d); },
+  saveDoctor: d => { const m=d.modal,f=m.f; if(f.name.replace(/^Dr\.?\s*/,'').trim().length<2){ m.err='Enter the doctor’s name.'; render(d); return; }
+    if(m.isNew){ const x={id:uid('d'),name:f.name.trim(),spec:f.spec.trim(),mob:f.mob,verified:true,active:true}; S.doctors.push(x); audit(d,'doctor.create','doctor',x.id,`Added ${x.name}`); }
+    else { const x=IX.D[f.id]; const was=x.verified; Object.assign(x,{name:f.name.trim(),spec:f.spec.trim(),mob:f.mob,verified:true}); audit(d,'doctor.update','doctor',x.id,`${was?'Updated':'Verified'} ${x.name}`); }
+    d.modal=null; commit(d,'Doctor saved'); toast(d,'Doctor saved'); },
+  addUser: d => { d.modal={type:'user',f:{name:'',email:'',title:'',role:'staff'}}; render(d); },
+  saveUser: d => { const m=d.modal,f=m.f; const dom=(f.email.split('@')[1]||'').toLowerCase(); if(!f.name.trim()){ m.err='Enter the full name.'; render(d); return; } if(!/^[^@\s]+@[^@\s]+$/.test(f.email)||!S.settings.email.domains.includes(dom)){ m.err=`Use a work email on ${S.settings.email.domains.join(' or ')}.`; render(d); return; } if(S.users.some(u=>u.email.toLowerCase()===f.email.toLowerCase())){ m.err='A user with this email already exists.'; render(d); return; }
+    const x={id:uid('u'),name:f.name.trim(),email:f.email.trim().toLowerCase(),role:f.role,title:f.title.trim()||(f.role==='admin'?'Admin':'Staff'),active:true}; S.users.push(x); audit(d,'user.create','user',x.id,`Created user ${x.name} (${f.role==='admin'?'Admin':'Staff'})`); d.modal=null; commit(d,`User ${x.name} created`); toast(d,`${x.name} added. A set-password email would be sent.`); buildWho(); },
+  uActive: (d,id) => { const x=IX.U[id]; x.active=!x.active; audit(d,'user.update','user',id,`${x.active?'Reactivated':'Deactivated'} ${x.name}`); commit(d,`${x.name} ${x.active?'reactivated':'deactivated'}`); buildWho(); toast(d, x.active?`${x.name} can sign in again.`:`${x.name} is deactivated and signed out everywhere.`); },
+  setAdd: (d,key) => { const v=((d.setIn||{})[key]||'').trim().toLowerCase(); d.setErr={}; const e=S.settings.email;
+    if(key==='domains'){ if(!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(v)){ d.setErr[key]='Enter a domain like '+DOMAIN+'.'; render(d); return; } if(!e.domains.includes(v)) e.domains.push(v); }
+    else { if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){ d.setErr[key]='Enter a valid email address.'; render(d); return; } if(!e.domains.includes(v.split('@')[1])){ d.setErr[key]=`Only addresses on ${e.domains.join(', ')} are allowed, because the email contains patient data.`; render(d); return; } if(!e[key].includes(v)) e[key].push(v); }
+    d.setIn={...(d.setIn||{}),[key]:''}; audit(d,'settings.update','settings','email',`Added ${v} to ${key==='domains'?'allowed domains':key.toUpperCase()}`); commit(d,'Email settings changed'); toast(d,'Settings saved'); },
+  setDel: (d,a) => { const [key,i]=a.split(':'); const e=S.settings.email; const v=e[key][+i]; if(key==='to'&&e.to.length===1){ toast(d,'Keep at least one To recipient.','warn'); return; } e[key].splice(+i,1); audit(d,'settings.update','settings','email',`Removed ${v} from ${key==='domains'?'allowed domains':key.toUpperCase()}`); commit(d,'Email settings changed'); toast(d,'Settings saved'); },
+};
+function startOrder(d,pid){ d.draft={pid,items:[],doc:'',docNew:'',pri:'R',notes:'',amendOf:null,reason:'',step:'pick'}; d.oq=''; d.ocat=null; go(d,'order'); }
+function toggleItem(d,key){
+  const [t,c]=key.split(':'); const dr=d.draft;
+  const i=dr.items.findIndex(x=>x.t===t&&x.c===c);
+  if(i>-1){ dr.items.splice(i,1); return; }
+  if(t==='t'){ const b=coveredBy(d,c); if(b){ toast(d,`Already included in ${bName(b)}`,'warn'); return; } dr.items.push({t,c}); return; }
+  const covered = dr.items.filter(x=>x.t==='t' && IX.B[c].tests.includes(x.c));
+  dr.items = dr.items.filter(x=>!covered.includes(x)); dr.items.unshift({t,c});
+  if(covered.length) toast(d,`Removed ${covered.length} test${covered.length>1?'s':''} already in ${bName(c)}`);
+}
+function saveOrder(d){
+  const dr=d.draft; if(!dr.items.length){ toast(d,'Add at least one test.','bad'); return; }
+  if(dr.amendOf && !(dr.reason||'').trim()){ dr.reasonErr=true; if(d.mode==='phone') dr.step='details'; render(d); toast(d,'Enter a reason for the amendment.','bad'); return; }
+  let doc = dr.doc||null;
+  if(doc==='__new'){ const n=(dr.docNew||'').trim(); if(n.length<3){ toast(d,'Type the doctor’s name, or pick one from the list.','bad'); return; } const x={id:uid('d'),name:/^dr/i.test(n)?n:'Dr. '+n,spec:'',mob:'',verified:false,active:true}; S.doctors.push(x); doc=x.id; audit(d,'doctor.create','doctor',x.id,`${x.name} added during order entry (unverified)`); }
+  const items = dr.items.map(x=>x.t==='b' ? {t:'b',c:x.c,p:x.p!=null?x.p:IX.B[x.c].price,ts:x.ts||IX.B[x.c].tests.slice()} : {t:'t',c:x.c,p:x.p!=null?x.p:IX.T[x.c].t.price});
+  let o;
+  if(dr.amendOf){
+    o=S.orders.find(x=>x.id===dr.amendOf);
+    o.hist = o.hist || [{ver:1,at:o.at,by:o.by,reason:''}];
+    o.items=items; o.doc=doc; o.pri=dr.pri; o.notes=(dr.notes||'').trim(); o.ver++;
+    o.hist.push({ver:o.ver,at:Date.now(),by:d.user,reason:dr.reason.trim()});
+    o.email={st:'draft',type:'amended'};
+    audit(d,'order.amend','order',o.id,`Amended ${o.no} to v${o.ver}: ${dr.reason.trim()}`);
+  } else {
+    const at=Date.now(), dk=dkey(at); const seq=S.orders.filter(x=>x.date===dk).length+1;
+    o={id:uid('o'),no:`${S.settings.lab.prefix}-${dk.replace(/-/g,'')}-${String(seq).padStart(4,'0')}`,pid:dr.pid,at,date:dk,doc,pri:dr.pri,notes:(dr.notes||'').trim(),items,by:d.user,st:'active',ver:1,email:{st:'draft',type:'new'}};
+    S.orders.push(o);
+    audit(d,'order.create','order',o.id,`Created ${o.no} for ${pName(IX.P[o.pid])} (${flatItems(items).length} tests)`);
+  }
+  S.lastNew=o.id; d.draft=null;
+  if(d.hist.length && d.hist[d.hist.length-1].route==='orderView') d.hist.pop();
+  d.route='orderView'; d.p={id:o.id}; d.modal={type:'email',id:o.id};
+  commit(d, dr.amendOf ? `Order ${o.no} amended` : `Order ${o.no} saved`);
+  toast(d, dr.amendOf ? `${o.no} amended to v${o.ver}` : `Order ${o.no} saved`);
+}
+function IN(d,key,el){
+  const val = el.type==='checkbox' ? el.checked : el.value;
+  if(key==='q'){ d.q=val; region(d,'pres',patientResults(d)); return; }
+  if(key==='oq'){ d.oq=val; region(d,'pick',pickerList(d)); return; }
+  if(key==='olq'){ d.olq=val; const u=me(d); const {a}=rangeBounds(d.p.range||'today'); region(d,'olist',ordersFiltered(d,S.orders.filter(o=>o.at>=a&&(u.role==='admin'||o.by===u.id)).sort((x,y)=>y.at-x.at),u)); return; }
+  if(key==='cq'){ d.cq=val; region(d,'ctree',catTree(d)); return; }
+  if(key.startsWith('f.')){ const k=key.slice(2); d.form[k]= k==='mob'||k==='pin' ? String(val).replace(/\D/g,'') : val; if(k==='mob'){ if(el.value!==d.form.mob) el.value=d.form.mob; region(d,'dup',dupWarn(d)); } if(d.formErr&&d.formErr[k]){ delete d.formErr[k]; const fe=el.closest('.field'); if(fe){ fe.classList.remove('bad'); const er=fe.querySelector('.err'); if(er) er.remove(); } } return; }
+  if(key.startsWith('draft.')){ const k=key.slice(6); d.draft[k]=val; if(k==='reason') d.draft.reasonErr=false; if(el.dataset.rr) render(d); return; }
+  if(key==='m.reason'){ d.modal.reason=val; return; }
+  if(key==='m.addTest'){ if(val){ d.modal.f.tests.push(val); render(d); } return; }
+  if(key.startsWith('m.f.')){ d.modal.f[key.slice(4)]=val; if(key==='m.f.price'&&d.modal.type==='bundle'){ const f=d.modal.f; const sum=f.tests.reduce((s,c)=>s+(IX.T[c]?IX.T[c].t.price:0),0); region(d,'bsum',`${inr(sum)} · ${pct(sum-(+val||0),sum)}% off`); } return; }
+  if(key.startsWith('rp.')){ d.p={...d.p,[key.slice(3)]:val}; render(d); return; }
+  if(key.startsWith('setIn.')){ d.setIn={...(d.setIn||{}),[key.slice(6)]:val}; return; }
+}
+
+/* ================= binding, stage ================= */
+function bindDevice(d){
+  const scr=d.screen;
+  scr.addEventListener('click', ev=>{
+    const el=ev.target.closest('[data-act]'); if(!el || !scr.contains(el) || el.disabled) return;
+    const a=el.dataset.act; if(a==='backdrop' && ev.target!==el) return;
+    ev.preventDefault();
+    const fn=ACT[a]; if(fn) fn(d, el.dataset.arg, el, ev);
+  });
+  scr.addEventListener('input', ev=>{ const el=ev.target.closest('[data-in]'); if(el && el.tagName!=='SELECT' && el.type!=='checkbox') IN(d, el.dataset.in, el); });
+  scr.addEventListener('change', ev=>{ const el=ev.target.closest('[data-in]'); if(el && (el.tagName==='SELECT' || el.type==='checkbox')) IN(d, el.dataset.in, el); });
+  scr.addEventListener('keydown', ev=>{ if(ev.key==='Enter' && ev.target.matches('input[data-in^="setIn."]')){ ev.preventDefault(); ACT.setAdd(d, ev.target.dataset.in.slice(6)); } if(ev.key==='Escape' && d.modal){ d.modal=null; render(d); } });
+  scr.addEventListener('pointermove', ev=>{
+    const t=ev.target.closest('[data-tip]'); const tip=scr.querySelector('.tip'); if(!tip) return;
+    if(!t){ tip.hidden=true; return; }
+    tip.textContent=''; t.getAttribute('data-tip').split('\n').forEach((ln,i)=>{ const s=document.createElement(i?'div':'b'); s.textContent=ln; if(!i) s.style.display='block'; tip.appendChild(s); });
+    tip.hidden=false;
+    const r=scr.getBoundingClientRect(); const s=d.scale||1;
+    let x=(ev.clientX-r.left)/s+14, y=(ev.clientY-r.top)/s+14;
+    const W=scr.clientWidth, H=scr.clientHeight;
+    if(x+tip.offsetWidth>W-6) x=(ev.clientX-r.left)/s-tip.offsetWidth-10;
+    if(y+tip.offsetHeight>H-6) y=(ev.clientY-r.top)/s-tip.offsetHeight-10;
+    tip.style.left=x+'px'; tip.style.top=y+'px';
+  });
+  scr.addEventListener('pointerleave', ()=>{ const tip=scr.querySelector('.tip'); if(tip) tip.hidden=true; });
+  scr.addEventListener('pointerdown', ()=>{ d.down=true; });
+  window.addEventListener('pointerup', ()=>{ setTimeout(()=>{ d.down=false; }, 50); });
+}
+function buildWho(){
+  Object.values(devices).forEach(d=>{
+    const sel=document.getElementById('who-'+d.key);
+    sel.innerHTML = '<option value="">Signed out</option>' + S.users.filter(u=>u.active).map(u=>`<option value="${u.id}">${esc(u.name)} (${u.role==='admin'?'Admin':'Staff'})</option>`).join('');
+    sel.value = d.user||'';
+  });
+}
+function syncWho(d){ const sel=document.getElementById('who-'+d.key); if(sel && sel.value!==(d.user||'')) sel.value=d.user||''; }
+function layout(){
+  const stage=document.getElementById('stage'); const avail=stage.clientWidth;
+  const P=DEV.phone, T=DEV.tablet, gap=40;
+  let sp, st;
+  if(avail >= 900){ stage.classList.remove('stack'); sp=st=Math.min(1,(avail-gap)/(P.w+T.w)); }
+  else { stage.classList.add('stack'); sp=Math.min(1,avail/P.w); st=Math.min(1,avail/T.w); }
+  [['phone',sp,P],['tablet',st,T]].forEach(([k,s,dim])=>{
+    const slot=document.getElementById('slot-'+k), dv=document.getElementById('dev-'+k);
+    slot.style.width=(dim.w*s)+'px'; slot.style.height=(dim.h*s)+'px'; dv.style.transform=`scale(${s})`;
+    if(devices[k]) devices[k].scale=s;
+  });
+}
+function boot(){
+  load(); reindex(); updateSync();
+  const ph=makeDevice('phone','u1','home');
+  const tb=makeDevice('tablet','u4','dashboard');
+  buildWho();
+  ['phone','tablet'].forEach(k=>document.getElementById('who-'+k).addEventListener('change',e=>{ const d=devices[k]; const v=e.target.value; if(!v){ ACT.logout(d); return; } ACT.login(d,v); }));
+  document.getElementById('resetBtn').addEventListener('click',()=>{ try{ localStorage.removeItem(KEY); }catch(e){} S=seed(); save(); reindex(); Object.values(devices).forEach(d=>{ d.modal=null; d.draft=null; d.hist=[]; d.q=''; d.user=d.key==='phone'?'u1':'u4'; d.route=defaultRoute(IX.U[d.user]); d.p={}; }); buildWho(); updateSync(); Object.values(devices).forEach(render); });
+  layout(); window.addEventListener('resize', layout);
+  render(ph); render(tb);
+  setInterval(()=>{ Object.values(devices).forEach(d=>{ if(d.stale && !d.modal && !d.down && !d.screen.contains(document.activeElement)) render(d); }); }, 1500);
+  setInterval(()=>{ document.querySelectorAll('.sb-time').forEach(e=>e.textContent=fmtT(Date.now())); }, 20000);
+}
+if(!window.__NO_BOOT) boot();
+</script>
+</body>
+</html>
