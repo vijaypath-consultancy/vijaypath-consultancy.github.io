@@ -196,6 +196,19 @@ button.li:hover{background:#f7fafa}
 .obar .sum b{display:block;font:600 16px var(--f-display);color:var(--a-ink)}
 .tubes{display:flex;flex-wrap:wrap;gap:6px 12px}
 .total{display:flex;justify-content:space-between;align-items:baseline;font:600 15px var(--f-display);padding-top:10px}
+.bill>div{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13.5px;padding:3px 0}
+.bill .tot{font:600 15px var(--f-display);border-top:1px solid var(--a-line);margin-top:4px;padding-top:8px}
+.fileitem{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--a-line)}
+.fileitem .fn{font-size:13.5px;overflow-wrap:anywhere}
+.fileitem .x{border:0;background:none;color:var(--a-muted);padding:2px}
+.inp.sm{width:auto;padding:6px 8px;font-size:12.5px}
+.btn.sm{padding:6px 10px;font-size:12.5px}
+.upl{margin-top:8px;cursor:pointer}
+.chk{align-items:flex-start;gap:8px;line-height:1.4}
+.chk input{margin-top:2px;width:16px;height:16px;accent-color:var(--a-pri)}
+.acts{display:flex;flex-wrap:wrap;gap:10px}
+.acts .btn{flex:1 0 auto}
+.linkbtn{border:0;background:none;padding:0;color:var(--a-pri);font:inherit;text-decoration:underline;cursor:pointer}
 
 /* Order view */
 .ohead{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -325,7 +338,7 @@ table.t td.wrap{white-space:normal;min-width:220px}
       <button class="st-btn" id="resetBtn" type="button">Reset demo data</button>
     </div>
   </header>
-  <div class="st-hint"><b>Both devices share one demo database.</b> Try this: on the phone (staff), search <b>98</b> or tap <b>New patient</b>, pick tests and save. Preview the email and press Send. The tablet (admin) dashboard and live feed update straight away. Use the selector above each device to sign in as someone else. Email is simulated and nothing leaves this page.</div>
+  <div class="st-hint"><b>Both devices share one demo database.</b> Try this: on the phone (staff), search <b>98</b> or tap <b>New patient</b>, pick tests and save. Attach a prescription if you like, then preview the lab and patient emails and press Send. The tablet (admin) dashboard and live feed update straight away. Use the selector above each device to sign in as someone else. Email is simulated and nothing leaves this page.</div>
   <div id="stage">
     <div class="slot-wrap" id="wrap-phone">
       <div class="slot-cap"><b>Phone</b><span>390 × 844</span><label>Signed in as <select id="who-phone"></select></label></div>
@@ -343,7 +356,7 @@ table.t td.wrap{white-space:normal;min-width:220px}
 "use strict";
 /* ================= constants & utils ================= */
 const RAW = JSON.parse(document.getElementById('catalogue-data').textContent);
-const KEY = 'pathdesk.proto.v2';
+const KEY = 'pathdesk.proto.v3';
 const DOMAIN = 'hindujahospital.com';
 const DEV = { phone:{w:414,h:868}, tablet:{w:1060,h:804} };
 const TUBE = { EDTA:{c:'#7c5cc4',cap:'Lavender top'}, Citrate:{c:'#2f8fc9',cap:'Light-blue top'}, Fluoride:{c:'#7b8189',cap:'Grey top'}, Serum:{c:'#c99400',cap:'Gold top'} };
@@ -355,6 +368,9 @@ const pad = n => String(n).padStart(2,'0');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const nf = new Intl.NumberFormat('en-IN');
 const inr = n => '₹' + nf.format(Math.round(n));
+const nf2 = new Intl.NumberFormat('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const inr2 = n => '₹' + nf2.format(n);
+const kb = b => b>=1048576 ? (b/1048576).toFixed(1)+' MB' : Math.max(1,Math.round(b/1024))+' KB';
 const sod = ms => { const d = new Date(ms); d.setHours(0,0,0,0); return d.getTime(); };
 const addDays = (ms,n) => { const d = new Date(ms); d.setDate(d.getDate()+n); return d.getTime(); };
 const dkey = ms => { const d = new Date(ms); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); };
@@ -394,6 +410,8 @@ const ICON = {
   out:'<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/>',
   download:'<path d="M12 4v11M7 10l5 5 5-5M4 20h16"/>',
   bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  clip:'<path d="m20.5 11.5-8.6 8.6a5.3 5.3 0 0 1-7.5-7.5l8.6-8.6a3.5 3.5 0 0 1 5 5l-8.6 8.6a1.8 1.8 0 0 1-2.5-2.5l7.9-7.9"/>',
+  file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
 };
 const ic = (n,cls='') => `<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n]||''}</svg>`;
 let LOGO_N = 0;
@@ -481,7 +499,7 @@ function seed(){
       if(!items.length) items.push({t:'t',c:'HEM001',p:T0.HEM001.price});
       const by = wpick(STAFFW);
       const doc = R()<0.12 ? null : (R()<0.01 ? 'd11' : wpick(DW));
-      const o = { id:'o'+at.toString(36)+j, no:'', pid:p.id, at, date:dkey(at), doc, pri:R()<0.12?'U':'R', notes:R()<0.3?pick(NOTES):'', items, by, st:'active', ver:1,
+      const o = { id:'o'+at.toString(36)+j, no:'', pid:p.id, at, date:dkey(at), doc, pri:R()<0.12?'U':'R', notes:R()<0.3?pick(NOTES):'', items, by, st:'active', ver:1, gst:18,
         email: (k===0 && R()<0.22) ? {st:'draft',type:'new'} : {st:'sent',type:'new',at:at+rint(40,240)*1000,n:1} };
       if(!p.at){ p.at = at - rint(60,300)*1000; p.by = by; p.consent = p.at; }
       O.push(o);
@@ -490,11 +508,14 @@ function seed(){
   P.forEach(p=>{ if(!p.at){ p.at = addDays(t0,-rint(50,140)) + rint(9,17)*36e5; p.by = pick(['u1','u2','u3']); p.consent = p.at; } });
   const seqs = {}; O.forEach(o=>{ seqs[o.date]=(seqs[o.date]||0)+1; o.no = 'HL-'+o.date.replace(/-/g,'')+'-'+String(seqs[o.date]).padStart(4,'0'); });
 
-  const settings = { email:{ to:['pathlab.orders@'+DOMAIN], cc:['lab.manager@'+DOMAIN], domains:[DOMAIN] }, lab:{name:'Hinduja Hospital, Mahim — Pathology Lab', prefix:'HL'} };
+  const DOCTY = ['Prescription','Prescription','Referral letter','Previous report'];
+  O.forEach((o,i)=>{ const p=P.find(x=>x.id===o.pid); o.pcopy = !!(p && p.email); if(o.pcopy && o.email.st==='sent') o.email.pt={st:'sent',to:p.email,at:o.email.at+5000};
+    if(o.doc && (i*7919)%10<3){ const ty=DOCTY[i%4]; const img=i%3!==0; o.files=[{id:'f'+i,n:(ty==='Previous report'?'Old_report_':ty==='Referral letter'?'Referral_':'Rx_')+o.date.replace(/-/g,'')+(img?'.jpg':'.pdf'),sz:180000+(i*7717)%2400000,mt:img?'image/jpeg':'application/pdf',ty}]; } });
+  const settings = { tax:{rate:18,label:'GST'}, patientCopy:true, email:{ to:['pathlab.orders@'+DOMAIN], cc:['lab.manager@'+DOMAIN], domains:[DOMAIN] }, lab:{name:'Hinduja Hospital, Mahim — Pathology Lab', prefix:'HL'} };
   const audit = [], emailLog = [];
   const A = (at,actor,action,entity,eid,text) => audit.push({id:'a'+audit.length, at, actor, action, entity, eid, text});
   O.forEach(o=>{
-    if(o.at < now - 3*DAY) {} else if(o.email.st==='sent') emailLog.push({at:o.email.at, oid:o.id, no:o.no, type:'new', to:settings.email.to.concat(settings.email.cc).join(', '), st:'sent', n:1, note:''});
+    if(o.at < now - 3*DAY) {} else if(o.email.st==='sent') { emailLog.push({at:o.email.at, oid:o.id, no:o.no, type:'new', to:settings.email.to.concat(settings.email.cc).join(', '), st:'sent', n:1, note:''}); if(o.email.pt) emailLog.push({at:o.email.pt.at, oid:o.id, no:o.no, type:'patient copy', to:o.email.pt.to, st:'sent', n:1, note:''}); }
     const r = R();
     if(r < 0.018 && o.at < now - 2*36e5){ o.st='cancelled'; o.cancelReason = pick(['Duplicate entry','Patient left before sample collection','Wrong patient selected']); o.email={st:'sent',type:'cancelled',at:o.at+20*60e3,n:1}; A(o.at+18*60e3,o.by,'order.cancel','order',o.id,`Cancelled ${o.no}: ${o.cancelReason}`); }
     else if(r < 0.045 && o.at < now - 2*36e5){ const add = ['BIO004','END020','SER017','END021'].find(c=>!flatItems(o.items).some(x=>x.c===c)); if(add){ o.hist=[{ver:1,items:o.items.map(x=>({...x,ts:x.ts&&x.ts.slice()})),at:o.at,by:o.by,reason:''}]; o.items.push({t:'t',c:add,p:T0[add].price}); o.ver=2; const why='Doctor added '+T0[add].name+' on call'; o.hist.push({ver:2,at:o.at+45*60e3,by:o.by,reason:why}); o.email={st:'sent',type:'amended',at:o.at+46*60e3,n:1}; A(o.at+45*60e3,o.by,'order.amend','order',o.id,`Amended ${o.no} to v2: ${why}`); } }
@@ -543,6 +564,11 @@ function flatItems(items){
 }
 const priceOf = x => x.p != null ? x.p : (x.t==='b' ? IX.B[x.c].price : IX.T[x.c].t.price);
 const valueOf = items => items.reduce((s,x)=>s+priceOf(x),0);
+const gstRate = o => o && o.gst!=null ? o.gst : S.settings.tax.rate;
+function bill(items, rate){ const sub=valueOf(items); const gst=Math.round(sub*rate)/100; return {sub, rate, gst, total:Math.round((sub+gst)*100)/100}; }
+function billHTML(b){ return `<div class="bill"><div><span>Subtotal</span><span class="num">${inr2(b.sub)}</span></div><div><span>GST @ ${b.rate}% <span class="muted small">(CGST ${b.rate/2}% + SGST ${b.rate/2}%)</span></span><span class="num">${inr2(b.gst)}</span></div><div class="tot"><span>Total (INR)</span><span class="num">${inr2(b.total)}</span></div></div>`; }
+const FILEURL = {};
+const FILE_OK = ['application/pdf','image/jpeg','image/png'];
 function samplesOf(items){ const m={}; flatItems(items).forEach(f=>{ const s = IX.T[f.c] ? IX.T[f.c].t.sample : '?'; m[s]=(m[s]||0)+1; }); return m; }
 function ageDays(p,ref){ return ((ref||Date.now()) - p.dob)/DAY; }
 function ageText(p,ref){ const d=ageDays(p,ref); if(d<31) return Math.floor(d)+' d'; if(d<365) return Math.floor(d/30.44)+' mo'; return Math.floor(d/365.25)+' y'; }
@@ -688,7 +714,7 @@ function patientResults(d){
 }
 function orderList(d, os, showBy){
   if(!os.length) return `<div class="list"><div class="empty">No orders yet today.</div></div>`;
-  return `<div class="list">${os.map(o=>{ const p=IX.P[o.pid]; const n=flatItems(o.items).length; return `<button class="li ${S.lastNew===o.id?'flash':''}" data-act="openOrder" data-arg="${o.id}"><span class="grow"><div class="t">${esc(pName(p))} <span class="mono small muted">${o.no}</span></div><div class="m">${fmtT(o.at)} · ${n} test${n>1?'s':''} · ${esc(docName(o.doc))}${showBy?' · by '+esc(uName(o.by)):''}</div><div class="row" style="gap:6px;margin-top:5px;flex-wrap:wrap">${statusChips(o)}${emailChip(o)}</div></span>${ic('chev','sm chev')}</button>`; }).join('')}</div>`;
+  return `<div class="list">${os.map(o=>{ const p=IX.P[o.pid]; const n=flatItems(o.items).length; return `<button class="li ${S.lastNew===o.id?'flash':''}" data-act="openOrder" data-arg="${o.id}"><span class="grow"><div class="t">${esc(pName(p))} <span class="mono small muted">${o.no}</span></div><div class="m">${fmtT(o.at)} · ${n} test${n>1?'s':''} · ${esc(docName(o.doc))}${showBy?' · by '+esc(uName(o.by)):''}</div><div class="row" style="gap:6px;margin-top:5px;flex-wrap:wrap">${statusChips(o)}${emailChip(o)}${(o.files||[]).length?`<span class="chip">${ic('clip','sm')}${o.files.length}</span>`:''}</div></span>${ic('chev','sm chev')}</button>`; }).join('')}</div>`;
 }
 
 /* ---- Patient profile ---- */
@@ -750,10 +776,10 @@ VIEWS.order = (d,u) => {
   }
   if(dr.step==='details'){
     return { title: dr.amendOf ? 'Review amendment' : 'Review order', sub, body: selectionHTML(d,false), hideTabs:true,
-      footer:`<div class="obar"><div class="sum"><b>${f.length} test${f.length===1?'':'s'} · ${inr(valueOf(dr.items))}</b>${dr.items.length} item${dr.items.length===1?'':'s'} selected</div><button class="btn pri" data-act="saveOrder" ${dr.items.length?'':'disabled'}>${dr.amendOf?'Save amendment':'Save order'}</button></div>` };
+      footer:`<div class="obar"><div class="sum"><b>${f.length} test${f.length===1?'':'s'} · ${inr(bill(dr.items,S.settings.tax.rate).total)}</b>incl. ${S.settings.tax.rate}% GST · ${dr.items.length} item${dr.items.length===1?'':'s'} selected</div><button class="btn pri" data-act="saveOrder" ${dr.items.length?'':'disabled'}>${dr.amendOf?'Save amendment':'Save order'}</button></div>` };
   }
   return { title, sub, body: pickerHTML(d), hideTabs:true,
-    footer:`<div class="obar"><div class="sum"><b>${f.length} test${f.length===1?'':'s'} · ${inr(valueOf(dr.items))}</b>${dr.items.length?dr.items.length+' item'+(dr.items.length===1?'':'s')+' selected':'Nothing selected yet'}</div><button class="btn pri" data-act="ostep" ${dr.items.length?'':'disabled'}>Review ${ic('chev','sm')}</button></div>` };
+    footer:`<div class="obar"><div class="sum"><b>${f.length} test${f.length===1?'':'s'} · ${inr(bill(dr.items,S.settings.tax.rate).total)}</b>${dr.items.length?'incl. GST · '+dr.items.length+' item'+(dr.items.length===1?'':'s')+' selected':'Nothing selected yet'}</div><button class="btn pri" data-act="ostep" ${dr.items.length?'':'disabled'}>Review ${ic('chev','sm')}</button></div>` };
 };
 function itemSel(d,t,c){ return d.draft.items.some(x=>x.t===t&&x.c===c); }
 function coveredBy(d,c){ const b = d.draft.items.find(x=>x.t==='b' && (IX.B[x.c]?IX.B[x.c].tests:[]).includes(c)); return b ? b.c : null; }
@@ -783,6 +809,28 @@ function pickerList(d){
   <div class="sec">Browse by category</div><div class="list">${cats}</div>`;
 }
 function bundleRow(d,b){ const on=itemSel(d,'b',b.code); return `<div class="pitem"><div class="grow"><div class="nm">${esc(b.name)}</div><div class="mt"><span class="mono">${b.code}</span><span>${b.tests.length} tests</span><span class="num">${inr(b.price)}</span></div></div><button class="add ${on?'on':''}" data-act="toggleItem" data-arg="b:${b.code}" aria-pressed="${on}" aria-label="${on?'Remove':'Add'} ${esc(b.name)}">${ic(on?'check':'plus')}</button></div>`; }
+function filesField(d){
+  const dr=d.draft; const fl=dr.files||[];
+  const rows = fl.map(x=>`<div class="fileitem">${ic(x.mt==='application/pdf'?'file':'clip','sm')}<div class="grow"><div class="fn">${esc(x.n)}</div><div class="small muted">${kb(x.sz)} · ${x.mt==='application/pdf'?'PDF':'Image'}</div></div><select class="inp sm" data-in="dfile.${x.id}" aria-label="Document type for ${esc(x.n)}">${['Prescription','Referral letter','Previous report','Other'].map(t=>`<option ${x.ty===t?'selected':''}>${t}</option>`).join('')}</select><button class="x" data-act="fileDel" data-arg="${x.id}" aria-label="Remove ${esc(x.n)}">${ic('x','sm')}</button></div>`).join('');
+  return `<div class="field"><span class="flabel">Supporting documents</span>${rows}${fl.length<5?`<label class="btn block upl">${ic('clip','sm')}${d.mode==='phone'?'Take photo or attach file':'Attach prescription or document'}<input type="file" data-file="1" accept="application/pdf,image/jpeg,image/png" multiple hidden></label>`:''}<div class="small muted" style="margin-top:4px">Optional. PDF, JPG or PNG, up to 10 MB each, 5 files at most.</div></div>`;
+}
+function pcopyField(d){
+  const dr=d.draft; const p=IX.P[dr.pid];
+  if(!p.email) return `<div class="field"><span class="flabel">Copy to patient</span><div class="small muted">No email address on file, so the patient will not get a copy. Add one from the patient’s profile to send copies on later orders.</div></div>`;
+  return `<div class="field"><span class="flabel">Copy to patient</span><label class="row small chk"><input type="checkbox" data-in="draft.pcopy" ${dr.pcopy?'checked':''}><span>Email the order summary and charges to <b style="overflow-wrap:anywhere">${esc(p.email)}</b></span></label></div>`;
+}
+function addFiles(d, list){
+  const dr=d.draft; if(!dr) return; dr.files=dr.files||[]; const bad=[];
+  Array.from(list||[]).forEach(f=>{
+    if(dr.files.length>=5){ bad.push(f.name+' (limit of 5 files)'); return; }
+    if(!FILE_OK.includes(f.type)){ bad.push(f.name+' (use PDF, JPG or PNG)'); return; }
+    if(f.size>10*1048576){ bad.push(f.name+' (over 10 MB)'); return; }
+    const id=uid('f'); try { FILEURL[id]=URL.createObjectURL(f); } catch(e){}
+    dr.files.push({id,n:f.name,sz:f.size,mt:f.type,ty:'Prescription'});
+  });
+  render(d);
+  if(bad.length) toast(d,'Not attached: '+bad.join(', '),'bad'); else toast(d,'Document attached');
+}
 function selectionHTML(d, isPanel){
   const dr = d.draft; const f = flatItems(dr.items); const sm = samplesOf(dr.items);
   const items = dr.items.length ? dr.items.map(x=>{
@@ -794,8 +842,10 @@ function selectionHTML(d, isPanel){
     <div class="field"><label for="${d.key}-doc">Referring doctor</label><select class="inp" id="${d.key}-doc" data-in="draft.doc" data-rr="1"><option value="">Self / walk-in</option>${docs.map(x=>`<option value="${x.id}" ${dr.doc===x.id?'selected':''}>${esc(x.name)}${x.spec?' — '+esc(x.spec):''}${x.verified?'':' (unverified)'}</option>`).join('')}<option value="__new" ${dr.doc==='__new'?'selected':''}>+ Add a doctor not in the list…</option></select>${dr.doc==='__new'?`<input class="inp" style="margin-top:6px" id="${d.key}-docnew" data-in="draft.docNew" value="${esc(dr.docNew||'')}" placeholder="Doctor's full name">`:''}</div>
     <div class="field"><span class="flabel">Priority</span><div class="seg">${[['R','Routine'],['U','Urgent']].map(([k,l])=>`<button type="button" class="${dr.pri===k?'on':''}" data-act="dset" data-arg="pri:${k}">${l}</button>`).join('')}</div></div>
     <div class="field"><label for="${d.key}-notes">Clinical notes</label><textarea class="inp" id="${d.key}-notes" data-in="draft.notes" maxlength="500" rows="3" placeholder="Optional, e.g. fasting since 10 pm">${esc(dr.notes)}</textarea></div>
-    ${dr.amendOf?`<div class="field ${dr.reasonErr?'bad':''}"><label for="${d.key}-reason">Reason for amendment *</label><input class="inp" id="${d.key}-reason" data-in="draft.reason" value="${esc(dr.reason||'')}" placeholder="e.g. Doctor added a test on call">${dr.reasonErr?'<div class="err">Enter a reason for the amendment.</div>':''}</div>`:''}`;
-  const summary = `<div class="flabel" style="margin:14px 0 6px">Samples needed</div><div class="tubes">${Object.keys(sm).length?Object.entries(sm).map(([s,n])=>`${tubeChip(s)}<span class="small muted" style="margin-left:-8px">×${n}</span>`).join(''):'<span class="small muted">—</span>'}</div><div class="total"><span>${f.length} test${f.length===1?'':'s'}</span><span class="num">${inr(valueOf(dr.items))}</span></div>`;
+    ${dr.amendOf?`<div class="field ${dr.reasonErr?'bad':''}"><label for="${d.key}-reason">Reason for amendment *</label><input class="inp" id="${d.key}-reason" data-in="draft.reason" value="${esc(dr.reason||'')}" placeholder="e.g. Doctor added a test on call">${dr.reasonErr?'<div class="err">Enter a reason for the amendment.</div>':''}</div>`:''}
+    ${filesField(d)}
+    ${pcopyField(d)}`;
+  const summary = `<div class="flabel" style="margin:14px 0 6px">Samples needed</div><div class="tubes">${Object.keys(sm).length?Object.entries(sm).map(([s,n])=>`${tubeChip(s)}<span class="small muted" style="margin-left:-8px">×${n}</span>`).join(''):'<span class="small muted">—</span>'}</div><div class="flabel" style="margin:14px 0 2px">Charges · ${f.length} test${f.length===1?'':'s'}</div>${billHTML(bill(dr.items, dr.amendOf ? gstRate(S.orders.find(o=>o.id===dr.amendOf)) : S.settings.tax.rate))}`;
   if(isPanel) return `<div class="sel-scroll" data-keep="sel"><div class="flabel">Selected (${dr.items.length})</div>${items}${summary}<div class="stack" style="margin-top:16px">${details}</div></div><div class="sel-foot"><button class="btn pri block" data-act="saveOrder" ${dr.items.length?'':'disabled'}>${dr.amendOf?'Save amendment':'Save order'}</button></div>`;
   return `<div class="card">${items}${summary}</div><div class="stack" style="margin-top:16px">${details}</div><button class="btn block" style="margin-top:14px" data-act="ostepBack">${ic('plus','sm')}Add more tests</button>`;
 }
@@ -805,20 +855,22 @@ VIEWS.orderView = (d,u) => {
   const o = S.orders.find(x=>x.id===d.p.id); if(!o) return {title:'Order', body:'<div class="empty">Order not found.</div>'};
   const p = IX.P[o.pid]; const f = flatItems(o.items); const sm = samplesOf(o.items);
   const e = o.email || {};
-  const emailCard = `<div class="card"><div class="emailcard"><span style="color:var(--a-pri)">${ic('mail')}</span><div class="grow"><b>Email to lab staff</b><div class="small muted">${e.st==='sent'?`${({new:'New order',amended:'Amendment',cancelled:'Cancellation'})[e.type]||'Order'} email sent ${fmtDT(e.at)}${e.n>1?` · ${e.n} sends`:''}`:e.st==='failed'?`Failed after ${e.n} attempts: ${esc(e.err||'')}`:`${({new:'New order',amended:'Amendment',cancelled:'Cancellation'})[e.type]||'Order'} email has not been sent yet`}</div></div>${emailChip(o)}</div><button class="btn ${e.st==='sent'?'':'pri'} block" style="margin-top:12px" data-act="previewEmail" data-arg="${o.id}">${ic('mail','sm')}${e.st==='sent'?'View email':'Preview & send email'}</button></div>`;
+  const emailCard = `<div class="card"><div class="emailcard"><span style="color:var(--a-pri)">${ic('mail')}</span><div class="grow"><b>Order emails</b><div class="small muted">Lab staff: ${e.st==='sent'?`${({new:'New order',amended:'Amendment',cancelled:'Cancellation'})[e.type]||'Order'} email sent ${fmtDT(e.at)}${e.n>1?` · ${e.n} sends`:''}`:e.st==='failed'?`Failed after ${e.n} attempts: ${esc(e.err||'')}`:`${({new:'New order',amended:'Amendment',cancelled:'Cancellation'})[e.type]||'Order'} email has not been sent yet`}</div><div class="small muted">Patient copy: ${!o.pcopy?(p.email?'not requested':'no email on file'):e.pt&&e.pt.st==='sent'?'sent to '+esc(e.pt.to)+' '+fmtT(e.pt.at):'goes to '+esc(p.email)+' with the staff email'}</div></div>${emailChip(o)}</div><button class="btn ${e.st==='sent'?'':'pri'} block" style="margin-top:12px" data-act="previewEmail" data-arg="${o.id}">${ic('mail','sm')}${e.st==='sent'?'View email':'Preview & send email'}</button></div>`;
   const pcard = `<button class="li card" style="border-radius:14px" data-act="openPatient" data-arg="${p.id}"><span class="avatar">${initials(pName(p))}</span><span class="grow"><div class="t">${esc(pName(p))}</div><div class="m">${gText(p.g)} · ${ageText(p,o.at)} · +91 ${p.mob}${p.uhid?' · '+esc(p.uhid):''}</div></span>${ic('chev','sm chev')}</button>`;
   const items = o.items.map(x=> x.t==='b'
     ? `<div class="selitem"><div class="grow"><b>${esc(bName(x.c))}</b> <span class="chip">Bundle · ${x.c}</span><ul>${(x.ts||IX.B[x.c].tests).map(c=>`<li>${esc(tName(c))} <span class="mono">${c}</span></li>`).join('')}</ul></div><span class="num small">${inr(priceOf(x))}</span></div>`
     : `<div class="selitem"><div class="grow">${esc(tName(x.c))} <span class="mono small muted">${x.c}</span><div class="small">${tubeChip(IX.T[x.c]?IX.T[x.c].t.sample:'')}</div></div><span class="num small">${inr(priceOf(x))}</span></div>`).join('');
-  const tcard = `<div class="card"><div class="flabel">Tests (${f.length})</div>${items}<div class="flabel" style="margin:12px 0 6px">Samples needed</div><div class="tubes">${Object.entries(sm).map(([s,n])=>`${tubeChip(s)}<span class="small muted" style="margin-left:-8px">×${n}</span>`).join('')}</div><div class="total"><span>List value</span><span class="num">${inr(valueOf(o.items))}</span></div></div>`;
+  const tcard = `<div class="card"><div class="flabel">Tests (${f.length})</div>${items}<div class="flabel" style="margin:12px 0 6px">Samples needed</div><div class="tubes">${Object.entries(sm).map(([s,n])=>`${tubeChip(s)}<span class="small muted" style="margin-left:-8px">×${n}</span>`).join('')}</div><div class="flabel" style="margin:14px 0 2px">Charges</div>${billHTML(bill(o.items,gstRate(o)))}</div>`;
+  const fl = o.files||[];
+  const dcard = `<div class="card"><div class="flabel">Supporting documents (${fl.length})</div>${fl.length?fl.map(x=>`<div class="fileitem">${ic(x.mt==='application/pdf'?'file':'clip','sm')}<div class="grow"><div class="fn">${esc(x.n)}</div><div class="small muted">${esc(x.ty)} · ${kb(x.sz)}</div></div><button class="btn sm" data-act="fileView" data-arg="${o.id}:${x.id}">View</button></div>`).join(''):'<div class="small muted">None attached.</div>'}</div>`;
   const meta = `<div class="card"><dl class="kv"><dt>Order date</dt><dd>${fmtDT(o.at)}</dd><dt>Referring doctor</dt><dd>${esc(docName(o.doc))}${o.doc&&IX.D[o.doc]&&!IX.D[o.doc].verified?' <span class="chip warn">Unverified</span>':''}</dd><dt>Priority</dt><dd>${o.pri==='U'?'<span class="chip urg">Urgent</span>':'Routine'}</dd><dt>Clinical notes</dt><dd>${esc(o.notes)||'<span class="muted">—</span>'}</dd><dt>Registered by</dt><dd>${esc(uName(o.by))}</dd>${o.st==='cancelled'?`<dt>Cancelled</dt><dd>${esc(o.cancelReason)}</dd>`:''}</dl>
     ${o.hist&&o.hist.length?`<div class="flabel" style="margin:14px 0 6px">Version history</div>${o.hist.map(h=>`<div class="small">v${h.ver} · ${fmtDT(h.at)} · ${esc(uName(h.by))}${h.reason?' — '+esc(h.reason):' — original'}</div>`).join('')}`:''}</div>`;
   const editable = canEdit(u,o);
-  const actions = `<div class="row" style="flex-wrap:wrap">${editable?`<button class="btn grow" data-act="amendOrder" data-arg="${o.id}">${ic('edit','sm')}Amend</button><button class="btn danger grow" data-act="cancelOrder" data-arg="${o.id}">${ic('ban','sm')}Cancel order</button>`:''}<button class="btn grow" data-act="startOrder" data-arg="${p.id}">${ic('plus','sm')}New order for patient</button></div>${!editable&&o.st==='active'&&u.role!=='admin'?'<div class="small muted" style="margin-top:6px">Staff can amend or cancel their own orders until midnight on the day they were created.</div>':''}`;
+  const actions = `<div class="acts">${editable?`<button class="btn grow" data-act="amendOrder" data-arg="${o.id}">${ic('edit','sm')}Amend</button><button class="btn danger grow" data-act="cancelOrder" data-arg="${o.id}">${ic('ban','sm')}Cancel order</button>`:''}<button class="btn grow" data-act="startOrder" data-arg="${p.id}">${ic('plus','sm')}New order for patient</button></div>${!editable&&o.st==='active'&&u.role!=='admin'?'<div class="small muted" style="margin-top:6px">Staff can amend or cancel their own orders until midnight on the day they were created.</div>':''}`;
   const head = `<div class="ohead"><span class="ono">${o.no}</span>${statusChips(o)}</div><div class="small muted" style="margin:2px 0 14px">${fmtDT(o.at)} · ${f.length} tests · by ${esc(uName(o.by))}</div>`;
   const body = d.mode==='tablet'
-    ? `${head}<div class="split"><div class="stack">${pcard}${tcard}</div><div class="stack">${emailCard}${meta}${actions}</div></div>`
-    : `${head}<div class="stack">${emailCard}${pcard}${tcard}${meta}${actions}</div>`;
+    ? `${head}<div class="split"><div class="stack">${pcard}${tcard}</div><div class="stack">${emailCard}${dcard}${meta}${actions}</div></div>`
+    : `${head}<div class="stack">${emailCard}${pcard}${tcard}${dcard}${meta}${actions}</div>`;
   return { title: d.mode==='phone' ? 'Order' : 'Order '+o.no, body };
 };
 
@@ -1006,8 +1058,8 @@ function reportData(k, os, ctx){
   const C = (h,num,fmt) => ({h,num,fmt});
   const rowsAll = [];
   const prev = ctx.prev;
-  if(k==='R1') return { cols:[C('Order no.'),C('Date'),C('Time'),C('Patient'),C('UHID'),C('Gender'),C('Age'),C('Mobile'),C('Referring doctor'),C('Bundles'),C('Tests'),C('Test count',1),C('Sample types'),C('Priority'),C('List value ₹',1,'inr'),C('Clinical notes'),C('Registered by'),C('Email status'),C('Status'),C('Version',1)],
-    rows: os.map(o=>{ const p=IX.P[o.pid]; const f=flatItems(o.items); return [o.no,fmtD(o.at),fmtT(o.at),pName(p),p.uhid,p.g,ageText(p,o.at),p.mob,docName(o.doc),o.items.filter(x=>x.t==='b').map(x=>bName(x.c)).join('; '),f.map(x=>tName(x.c)).join('; '),f.length,Object.keys(samplesOf(o.items)).join(', '),o.pri==='U'?'Urgent':'Routine',valueOf(o.items),o.notes,uName(o.by),o.email.st,o.st,o.ver]; }) };
+  if(k==='R1') return { cols:[C('Order no.'),C('Date'),C('Time'),C('Patient'),C('UHID'),C('Gender'),C('Age'),C('Mobile'),C('Referring doctor'),C('Bundles'),C('Tests'),C('Test count',1),C('Sample types'),C('Priority'),C('Subtotal ₹',1,'inr'),C('GST %',1),C('GST ₹',1,'inr2'),C('Total ₹',1,'inr2'),C('Clinical notes'),C('Documents',1),C('Registered by'),C('Email status'),C('Patient copy'),C('Status'),C('Version',1)],
+    rows: os.map(o=>{ const p=IX.P[o.pid]; const f=flatItems(o.items); return [o.no,fmtD(o.at),fmtT(o.at),pName(p),p.uhid,p.g,ageText(p,o.at),p.mob,docName(o.doc),o.items.filter(x=>x.t==='b').map(x=>bName(x.c)).join('; '),f.map(x=>tName(x.c)).join('; '),f.length,Object.keys(samplesOf(o.items)).join(', '),o.pri==='U'?'Urgent':'Routine',...(b=>[b.sub,b.rate,b.gst,b.total])(bill(o.items,gstRate(o))),o.notes,(o.files||[]).length,uName(o.by),o.email.st,!o.pcopy?'No':o.email.pt&&o.email.pt.st==='sent'?'Sent':'Pending',o.st,o.ver]; }) };
   if(k==='R2'){ const rows=[]; os.forEach(o=>{ const p=IX.P[o.pid]; flatItems(o.items).forEach(f=>{ const x=IX.T[f.c]; if(ctx.cat && (!x||x.c.code!==ctx.cat)) return; const it=o.items.find(i=>i.t==='t'&&i.c===f.c); rows.push([fmtD(o.at),fmtT(o.at),o.no,pName(p),ageText(p,o.at)+' / '+p.g,x?x.c.name:'',x?x.s.name:'',f.c,tName(f.c),x?x.t.sample:'',x?x.t.tat:'',f.via?bName(f.via):'—',it?priceOf(it):'',docName(o.doc),o.pri==='U'?'Urgent':'Routine',uName(o.by)]); }); });
     return { cols:[C('Date'),C('Time'),C('Order no.'),C('Patient'),C('Age / Gender'),C('Category'),C('Sub-category'),C('Test code'),C('Test name'),C('Sample type'),C('TAT (h)',1),C('Via bundle'),C('Price ₹',1,'inr'),C('Referring doctor'),C('Priority'),C('Registered by')], rows }; }
   if(k==='R3'){ const m={}, pm={}; let tot=0; os.forEach(o=>flatItems(o.items).forEach(f=>{ const r=m[f.c]||(m[f.c]={d:0,b:0,p:new Set(),v:0}); f.via?r.b++:(r.d++, r.v+=IX.T[f.c]?IX.T[f.c].t.price:0); r.p.add(o.pid); tot++; })); prev.forEach(o=>flatItems(o.items).forEach(f=>pm[f.c]=(pm[f.c]||0)+1));
@@ -1041,7 +1093,7 @@ VIEWS.report = (d,u) => {
   const data = reportData(p.k, os, {a:B.a,b:B.b,prev,all,cat:p.cat});
   let rows = data.rows;
   if(p.sort!=null){ const i=p.sort, dir=p.dir||1; rows = rows.slice().sort((a,b)=>{ const x=a[i],y=b[i]; return (typeof x==='number'&&typeof y==='number'?x-y:String(x).localeCompare(String(y)))*dir; }); }
-  const fmt = (v,c) => v===''||v==null ? '' : c.fmt==='inr' ? nf.format(Math.round(v)) : c.fmt==='pct' ? (typeof v==='number'?v.toFixed(1)+'%':v) : esc(v);
+  const fmt = (v,c) => v===''||v==null ? '' : c.fmt==='inr' ? nf.format(Math.round(v)) : c.fmt==='inr2' ? nf2.format(v) : c.fmt==='pct' ? (typeof v==='number'?v.toFixed(1)+'%':v) : esc(v);
   const LIMIT = 150;
   const filters = `<div class="rfilters"><select class="inp" data-in="rp.range" data-rr="1" aria-label="Date range">${[['today','Today'],['7d','Last 7 days'],['30d','Last 30 days'],['all','All (45 days)']].map(([k2,l])=>`<option value="${k2}" ${(p.range||'7d')===k2?'selected':''}>${l}</option>`).join('')}</select>
     ${['R2','R3'].includes(p.k)?`<select class="inp" data-in="rp.cat" data-rr="1" aria-label="Category"><option value="">All categories</option>${S.cat.cats.map(c=>`<option value="${c.code}" ${p.cat===c.code?'selected':''}>${esc(c.name)}</option>`).join('')}</select>`:''}
@@ -1083,8 +1135,10 @@ VIEWS.settings = (d,u) => {
   const e = S.settings.email; const err = d.setErr || {};
   const chipList = (key,arr) => `<div class="chips">${arr.map((a,i)=>`<span class="chip">${esc(a)}<button data-act="setDel" data-arg="${key}:${i}" aria-label="Remove ${esc(a)}">${ic('x','sm')}</button></span>`).join('')||'<span class="small muted">None</span>'}</div><div class="addrow"><input class="inp" id="${d.key}-set-${key}" data-in="setIn.${key}" value="${esc((d.setIn||{})[key]||'')}" placeholder="${key==='domains'?'e.g. '+DOMAIN:'name@'+DOMAIN}" aria-label="Add ${key}"><button class="btn" data-act="setAdd" data-arg="${key}">Add</button></div>${err[key]?`<div class="err small" style="color:var(--a-bad);margin-top:4px">${esc(err[key])}</div>`:''}`;
   return { title:'Settings', body:`<div class="stack">
-    <div class="card"><b>Order email recipients</b><p class="small muted" style="margin:4px 0 10px">Every saved, amended or cancelled order is emailed to these addresses. Patients are never emailed.</p><div class="flabel">To</div>${chipList('to',e.to)}<div class="flabel" style="margin-top:14px">CC</div>${chipList('cc',e.cc)}</div>
-    <div class="card"><b>Allowed email domains</b><p class="small muted" style="margin:4px 0 10px">Recipients must belong to one of these domains, because the email contains patient health data.</p>${chipList('domains',e.domains)}</div>
+    <div class="card"><b>Order email recipients</b><p class="small muted" style="margin:4px 0 10px">Every saved, amended or cancelled order is emailed to these addresses.</p><div class="flabel">To</div>${chipList('to',e.to)}<div class="flabel" style="margin-top:14px">CC</div>${chipList('cc',e.cc)}</div>
+    <div class="card"><div class="row"><div class="grow"><b>Copy to patient</b><p class="small muted" style="margin:4px 0 0">When on, new orders tick “Email a copy to the patient” by default if the patient has an email address. Staff can untick it per order. The patient copy has tests and charges but no clinical notes or documents.</p></div><button class="sw" role="switch" aria-checked="${!!S.settings.patientCopy}" aria-label="Copy to patient by default" data-act="setPcopy"></button></div></div>
+    <div class="card"><b>Pricing &amp; tax</b><p class="small muted" style="margin:4px 0 10px">Catalogue prices exclude GST. GST is added to the order subtotal and shown in both emails, split equally into CGST and SGST. Each order keeps the rate in force when it was saved.</p><div class="row"><label for="${d.key}-gst" class="grow">GST rate</label><select class="inp" style="width:110px" id="${d.key}-gst" data-in="tax.rate">${[0,5,12,18].map(r=>`<option value="${r}" ${S.settings.tax.rate===r?'selected':''}>${r}%</option>`).join('')}</select></div><dl class="kv" style="margin-top:10px"><dt>Currency</dt><dd>INR (₹), Indian digit grouping, 2 decimals in emails</dd></dl></div>
+    <div class="card"><b>Allowed email domains</b><p class="small muted" style="margin:4px 0 10px">Staff recipients must belong to one of these domains, because the email contains patient health data. Patient copies go only to the patient’s own address on file.</p>${chipList('domains',e.domains)}</div>
     <div class="card"><b>Lab</b><dl class="kv" style="margin-top:8px"><dt>Name</dt><dd>${esc(S.settings.lab.name)}</dd><dt>Order prefix</dt><dd class="mono">${S.settings.lab.prefix}-YYYYMMDD-NNNN</dd><dt>Time zone</dt><dd>Asia/Kolkata (IST)</dd><dt>Data region</dt><dd>asia-south1 (Mumbai)</dd><dt>Session timeout</dt><dd>30 minutes</dd></dl></div></div>` };
 };
 VIEWS.audit = (d,u) => {
@@ -1098,14 +1152,16 @@ function modalView(d){
   const m = d.modal; let head='', body='', foot='';
   const close = `<button class="iconbtn" data-act="closeModal" aria-label="Close">${ic('x')}</button>`;
   if(m.type==='email'){
-    const o = S.orders.find(x=>x.id===m.id); const em = buildEmail(o); const e=o.email;
+    const o = S.orders.find(x=>x.id===m.id); const e=o.email; const p=IX.P[o.pid]; const hasP = o.pcopy && !!p.email;
+    const tab = hasP && m.tab==='patient' ? 'patient' : 'staff'; const em = tab==='patient' ? buildPatientEmail(o) : buildEmail(o);
     head = `<b>Email preview</b>${close}`;
-    body = `<div class="note info">${ic('bolt','sm')} Prototype only: email delivery is not connected yet. <b>Send</b> marks the email as sent and adds it to the delivery log.</div>
+    body = `<div class="note info">${ic('bolt','sm')} Prototype only: email delivery is not connected yet. <b>Send</b> marks the email${hasP?'s':''} as sent and adds ${hasP?'them':'it'} to the delivery log.</div>
+      <div style="margin-top:12px">${hasP?seg('mtab',tab,[['staff','Lab staff'],['patient','Patient copy']]):'<span class="small muted">'+(p.email?'Patient copy not requested for this order.':'No patient email on file, so only the lab staff get this email.')+'</span>'}</div>
       <dl class="mailhdr"><dt>From</dt><dd>PathDesk &lt;no-reply@${DOMAIN}&gt;</dd><dt>To</dt><dd>${esc(em.to.join(', '))||'<span style="color:var(--a-bad)">No recipients. Add one in Settings.</span>'}</dd><dt>CC</dt><dd>${esc(em.cc.join(', '))||'—'}</dd><dt>Subject</dt><dd><b>${esc(em.subject)}</b></dd></dl><pre class="mailbody">${esc(em.text)}</pre>`;
     const u = me(d);
     foot = e.st==='sent'
       ? `<span class="small muted grow" style="align-self:center">Sent ${fmtDT(e.at)}</span>${u.role==='admin'?`<button class="btn" data-act="sendEmail" data-arg="${o.id}">Resend</button>`:''}<button class="btn pri" data-act="closeModal">Done</button>`
-      : `<button class="btn" data-act="closeModal">Later</button><button class="btn pri" data-act="sendEmail" data-arg="${o.id}">${ic('mail','sm')}Send email</button>`;
+      : `<button class="btn" data-act="closeModal">Later</button><button class="btn pri" data-act="sendEmail" data-arg="${o.id}">${ic('mail','sm')}${hasP?'Send both emails':'Send email'}</button>`;
   } else if(m.type==='cancel'){
     const o = S.orders.find(x=>x.id===m.id);
     head = `<b>Cancel ${o.no}?</b>${close}`;
@@ -1143,6 +1199,33 @@ function modalView(d){
   }
   return `<div class="modal" data-act="backdrop"><div class="sheet" role="dialog" aria-modal="true"><div class="mhead">${head}</div><div class="mbody">${body}</div><div class="mfoot">${foot}</div></div></div>`;
 }
+function chargeLines(o){
+  const b=bill(o.items,gstRate(o)); const W=50; const amt=v=>nf2.format(v);
+  const row=(n,v)=>{ n=n.length>W-14?n.slice(0,W-15)+'…':n; return (n+' '.repeat(W)).slice(0,W-12)+(' '.repeat(12)+amt(v)).slice(-12); };
+  const out=['', 'CHARGES (INR)'];
+  o.items.forEach(x=>out.push(row(x.t==='b'?bName(x.c)+' ('+x.c+')':tName(x.c), priceOf(x))));
+  out.push(' '.repeat(W-12)+'-'.repeat(12), row('Subtotal',b.sub), row(`GST @ ${b.rate}% (CGST ${b.rate/2}% + SGST ${b.rate/2}%)`,b.gst), row('TOTAL (INR, incl. GST)',b.total));
+  return out;
+}
+function buildPatientEmail(o){
+  const p = IX.P[o.pid]; const type=(o.email&&o.email.type)||'new'; const f=flatItems(o.items); const sm=samplesOf(o.items);
+  const L = (k,v) => (k+'               ').slice(0,15)+v;
+  const doc = o.doc && IX.D[o.doc] ? IX.D[o.doc].name : 'Self / walk-in';
+  const subject = type==='cancelled' ? `Your lab test order ${o.no} has been cancelled · Hinduja Hospital` : type==='amended' ? `Updated: your lab test order ${o.no} · Hinduja Hospital` : `Your lab test order ${o.no} · Hinduja Hospital`;
+  const lines = [`Dear ${pName(p)},`, ''];
+  lines.push(type==='cancelled' ? `Your lab test order ${o.no} has been cancelled. If you did not expect this, please contact the lab.` : type==='amended' ? `Your lab test order has been updated. The latest details are below.` : `Thank you for choosing Hinduja Hospital. Your lab test order has been registered.`, '');
+  lines.push(L('Order no.',o.no), L('Date / time',fmtDT(o.at)+' IST'), L('Ref. doctor',doc));
+  if(type!=='cancelled'){
+    lines.push('', `TESTS (${f.length})`);
+    o.items.forEach(x=>{ if(x.t==='b'){ lines.push(bName(x.c)); (x.ts||IX.B[x.c].tests).forEach(c=>lines.push('  - '+tName(c))); } else lines.push(tName(x.c)); });
+    lines.push(...chargeLines(o));
+    lines.push('', L('Samples',Object.keys(sm).join(', ')));
+    if(f.some(x=>/fasting/i.test(tName(x.c))) || o.notes && /fast/i.test(o.notes)) lines.push(L('Please note','Some tests need fasting. Follow the lab staff’s instructions.'));
+    lines.push('', 'This is an order summary, not a tax invoice. Your receipt is issued at the billing counter.');
+  }
+  lines.push('', `${S.settings.lab.name}`, 'For questions, contact the lab and quote your order number.', '— Automated message from PathDesk. Please do not reply.');
+  return { subject, to:[p.email], cc:[], text: lines.join('\n') };
+}
 function buildEmail(o){
   const p = IX.P[o.pid]; const e=o.email; const type=e.type||'new'; const f=flatItems(o.items); const sm=samplesOf(o.items);
   const pre = type==='amended' ? `[AMENDED v${o.ver}]` : type==='cancelled' ? '[CANCELLED]' : (o.pri==='U'?'[URGENT]':'');
@@ -1155,13 +1238,17 @@ function buildEmail(o){
   lines.push(L('Order no.',o.no), L('Date / time',fmtDT(o.at)+' IST'), L('Priority',o.pri==='U'?'URGENT':'Routine'), L('Registered by',uName(o.by)));
   if(type==='cancelled') lines.push(L('Reason',o.cancelReason||''));
   if(type==='amended' && o.hist && o.hist.length) lines.push(L('Reason',o.hist[o.hist.length-1].reason||''));
-  lines.push('','PATIENT', L('Name',pName(p)), L('Gender / Age',gText(p.g)+' / '+ageText(p,o.at)), L('Mobile',mask(p.mob)), L('UHID',p.uhid||'—'), L('Ref. doctor',doc));
+  lines.push('','PATIENT', L('Name',pName(p)), L('Gender / Age',gText(p.g)+' / '+ageText(p,o.at)), L('Mobile',mask(p.mob)), L('UHID',p.uhid||'—'), L('Ref. doctor',doc), L('Patient copy',o.pcopy&&p.email?'Yes, to '+p.email:'No'));
   if(type!=='cancelled'){
     lines.push('',`TESTS (${f.length} test${f.length===1?'':'s'}${nB?` from ${nB} bundle${nB>1?'s':''}`:''}${nB&&nT?` + ${nT} test${nT>1?'s':''}`:''})`);
     const row = (n,s,c,ind) => ((ind?'  - ':'')+n+'                                        ').slice(0,38)+' '+(s+'          ').slice(0,10)+c;
     o.items.forEach(x=>{ if(x.t==='b'){ lines.push(row(bName(x.c),'',x.c,false)); (x.ts||IX.B[x.c].tests).forEach(c=>lines.push(row(tName(c),IX.T[c]?IX.T[c].t.sample:'',c,true))); } else lines.push(row(tName(x.c),IX.T[x.c]?IX.T[x.c].t.sample:'',x.c,false)); });
     lines.push('', L('Samples needed',Object.entries(sm).map(([s,n])=>`${s} (${n})`).join(' · ')));
+    lines.push(...chargeLines(o));
   }
+  const fl=o.files||[];
+  if(fl.length){ lines.push('', `SUPPORTING DOCUMENTS (${fl.length}) · view in the app, not attached to this email`); fl.forEach(x=>lines.push(`  - ${x.ty}: ${x.n} (${kb(x.sz)})`)); }
+  lines.push('');
   lines.push(L('Clinical notes',o.notes||'—'), '', `Open in app: https://pathdesk.${DOMAIN}/orders/${o.no}  (sign-in required)`, '— Automated message from PathDesk. Do not reply.');
   return { subject, to:S.settings.email.to.slice(), cc:S.settings.email.cc.slice(), text: lines.join('\n') };
 }
@@ -1206,18 +1293,24 @@ const ACT = {
   saveOrder: d => saveOrder(d),
   openOrder: (d,id) => go(d,'orderView',{id}),
   previewEmail: (d,id) => { d.modal={type:'email',id}; render(d); },
+  mtab: (d,t) => { d.modal.tab=t; render(d); },
+  fileDel: (d,id) => { d.draft.files=(d.draft.files||[]).filter(x=>x.id!==id); render(d); },
+  fileView: (d,a) => { const [oid,fid]=a.split(':'); const u=FILEURL[fid]; if(u){ try{ window.open(u,'_blank','noopener'); }catch(e){} } else toast(d,'Demo document. The real app opens a short-lived secure link.','warn'); },
+  setPcopy: d => { S.settings.patientCopy=!S.settings.patientCopy; audit(d,'settings.update','settings','email',`Patient copy default turned ${S.settings.patientCopy?'on':'off'}`); commit(d,'Email settings changed'); toast(d,'Settings saved'); },
   sendEmail: (d,id) => {
     const o=S.orders.find(x=>x.id===id); const to=S.settings.email.to, cc=S.settings.email.cc;
     if(!to.length){ toast(d,'Add at least one recipient in Settings first.','bad'); return; }
     const resend = o.email.st==='sent';
     o.email={st:'sent',type:o.email.type||'new',at:Date.now(),n:(o.email.n||0)+1};
     S.emailLog.push({at:Date.now(),oid:o.id,no:o.no,type:resend?'resend':o.email.type,to:to.concat(cc).join(', '),st:'sent',n:o.email.n,note:'Simulated send (prototype)'});
-    audit(d,'email.send','order',o.id,`${resend?'Resent':'Sent'} ${o.email.type} email for ${o.no} to ${to.length+cc.length} recipient(s)`);
-    d.modal=null; commit(d,`Email for ${o.no} sent`); toast(d,`Email marked as sent to ${to.length+cc.length} recipient(s). Simulated, nothing was delivered.`);
+    const p=IX.P[o.pid]; const pc = o.pcopy && p.email;
+    if(pc){ o.email.pt={st:'sent',to:p.email,at:Date.now()}; S.emailLog.push({at:Date.now(),oid:o.id,no:o.no,type:'patient copy',to:p.email,st:'sent',n:o.email.n,note:'Simulated send (prototype)'}); }
+    audit(d,'email.send','order',o.id,`${resend?'Resent':'Sent'} ${o.email.type} email for ${o.no} to ${to.length+cc.length} staff recipient(s)${pc?' and a copy to the patient':''}`);
+    d.modal=null; commit(d,`Email for ${o.no} sent`); toast(d,`Marked as sent to ${to.length+cc.length} staff${pc?' + patient':''}. Simulated, nothing was delivered.`);
   },
   closeModal: d => { d.modal=null; render(d); },
   backdrop: (d,a,el,ev) => { if(ev && ev.target===el){ d.modal=null; render(d); } },
-  amendOrder: (d,id) => { const o=S.orders.find(x=>x.id===id); d.draft={pid:o.pid,items:o.items.map(x=>({t:x.t,c:x.c,p:x.p,ts:x.ts})),doc:o.doc||'',docNew:'',pri:o.pri,notes:o.notes,amendOf:o.id,reason:'',step:'pick'}; d.oq=''; d.ocat=null; go(d,'order'); },
+  amendOrder: (d,id) => { const o=S.orders.find(x=>x.id===id); d.draft={pid:o.pid,items:o.items.map(x=>({t:x.t,c:x.c,p:x.p,ts:x.ts})),files:(o.files||[]).map(x=>({...x})),pcopy:!!o.pcopy,doc:o.doc||'',docNew:'',pri:o.pri,notes:o.notes,amendOf:o.id,reason:'',step:'pick'}; d.oq=''; d.ocat=null; go(d,'order'); },
   cancelOrder: (d,id) => { d.modal={type:'cancel',id,reason:''}; render(d); },
   confirmCancel: (d,id) => { const m=d.modal; if(!(m.reason||'').trim()){ m.err=true; render(d); return; } const o=S.orders.find(x=>x.id===id); o.st='cancelled'; o.cancelReason=m.reason.trim(); o.email={st:'draft',type:'cancelled'}; audit(d,'order.cancel','order',o.id,`Cancelled ${o.no}: ${o.cancelReason}`); commit(d,`Order ${o.no} cancelled`); d.modal={type:'email',id:o.id}; render(d); },
   drange: (d,r) => { d.p={...d.p,range:r}; render(d); },
@@ -1264,7 +1357,7 @@ const ACT = {
     d.setIn={...(d.setIn||{}),[key]:''}; audit(d,'settings.update','settings','email',`Added ${v} to ${key==='domains'?'allowed domains':key.toUpperCase()}`); commit(d,'Email settings changed'); toast(d,'Settings saved'); },
   setDel: (d,a) => { const [key,i]=a.split(':'); const e=S.settings.email; const v=e[key][+i]; if(key==='to'&&e.to.length===1){ toast(d,'Keep at least one To recipient.','warn'); return; } e[key].splice(+i,1); audit(d,'settings.update','settings','email',`Removed ${v} from ${key==='domains'?'allowed domains':key.toUpperCase()}`); commit(d,'Email settings changed'); toast(d,'Settings saved'); },
 };
-function startOrder(d,pid){ d.draft={pid,items:[],doc:'',docNew:'',pri:'R',notes:'',amendOf:null,reason:'',step:'pick'}; d.oq=''; d.ocat=null; go(d,'order'); }
+function startOrder(d,pid){ d.draft={pid,items:[],files:[],pcopy:!!(IX.P[pid]&&IX.P[pid].email)&&S.settings.patientCopy,doc:'',docNew:'',pri:'R',notes:'',amendOf:null,reason:'',step:'pick'}; d.oq=''; d.ocat=null; go(d,'order'); }
 function toggleItem(d,key){
   const [t,c]=key.split(':'); const dr=d.draft;
   const i=dr.items.findIndex(x=>x.t===t&&x.c===c);
@@ -1284,15 +1377,15 @@ function saveOrder(d){
   if(dr.amendOf){
     o=S.orders.find(x=>x.id===dr.amendOf);
     o.hist = o.hist || [{ver:1,at:o.at,by:o.by,reason:''}];
-    o.items=items; o.doc=doc; o.pri=dr.pri; o.notes=(dr.notes||'').trim(); o.ver++;
+    o.items=items; o.doc=doc; o.pri=dr.pri; o.notes=(dr.notes||'').trim(); o.files=(dr.files||[]).slice(); o.pcopy=!!dr.pcopy&&!!IX.P[o.pid].email; o.ver++;
     o.hist.push({ver:o.ver,at:Date.now(),by:d.user,reason:dr.reason.trim()});
     o.email={st:'draft',type:'amended'};
     audit(d,'order.amend','order',o.id,`Amended ${o.no} to v${o.ver}: ${dr.reason.trim()}`);
   } else {
     const at=Date.now(), dk=dkey(at); const seq=S.orders.filter(x=>x.date===dk).length+1;
-    o={id:uid('o'),no:`${S.settings.lab.prefix}-${dk.replace(/-/g,'')}-${String(seq).padStart(4,'0')}`,pid:dr.pid,at,date:dk,doc,pri:dr.pri,notes:(dr.notes||'').trim(),items,by:d.user,st:'active',ver:1,email:{st:'draft',type:'new'}};
+    o={id:uid('o'),no:`${S.settings.lab.prefix}-${dk.replace(/-/g,'')}-${String(seq).padStart(4,'0')}`,pid:dr.pid,at,date:dk,doc,pri:dr.pri,notes:(dr.notes||'').trim(),items,by:d.user,st:'active',ver:1,gst:S.settings.tax.rate,files:(dr.files||[]).slice(),pcopy:!!dr.pcopy&&!!IX.P[dr.pid].email,email:{st:'draft',type:'new'}};
     S.orders.push(o);
-    audit(d,'order.create','order',o.id,`Created ${o.no} for ${pName(IX.P[o.pid])} (${flatItems(items).length} tests)`);
+    audit(d,'order.create','order',o.id,`Created ${o.no} for ${pName(IX.P[o.pid])} (${flatItems(items).length} tests${o.files.length?', '+o.files.length+' document'+(o.files.length>1?'s':''):''})`);
   }
   S.lastNew=o.id; d.draft=null;
   if(d.hist.length && d.hist[d.hist.length-1].route==='orderView') d.hist.pop();
@@ -1308,6 +1401,8 @@ function IN(d,key,el){
   if(key==='cq'){ d.cq=val; region(d,'ctree',catTree(d)); return; }
   if(key.startsWith('f.')){ const k=key.slice(2); d.form[k]= k==='mob'||k==='pin' ? String(val).replace(/\D/g,'') : val; if(k==='mob'){ if(el.value!==d.form.mob) el.value=d.form.mob; region(d,'dup',dupWarn(d)); } if(d.formErr&&d.formErr[k]){ delete d.formErr[k]; const fe=el.closest('.field'); if(fe){ fe.classList.remove('bad'); const er=fe.querySelector('.err'); if(er) er.remove(); } } return; }
   if(key.startsWith('draft.')){ const k=key.slice(6); d.draft[k]=val; if(k==='reason') d.draft.reasonErr=false; if(el.dataset.rr) render(d); return; }
+  if(key.startsWith('dfile.')){ const x=(d.draft.files||[]).find(f=>f.id===key.slice(6)); if(x) x.ty=val; return; }
+  if(key==='tax.rate'){ const old=S.settings.tax.rate; S.settings.tax.rate=+val; audit(d,'settings.update','settings','tax',`GST rate changed from ${old}% to ${+val}% for new orders`); commit(d,'Tax settings changed'); toast(d,'GST rate saved. Existing orders keep their rate.'); return; }
   if(key==='m.reason'){ d.modal.reason=val; return; }
   if(key==='m.addTest'){ if(val){ d.modal.f.tests.push(val); render(d); } return; }
   if(key.startsWith('m.f.')){ d.modal.f[key.slice(4)]=val; if(key==='m.f.price'&&d.modal.type==='bundle'){ const f=d.modal.f; const sum=f.tests.reduce((s,c)=>s+(IX.T[c]?IX.T[c].t.price:0),0); region(d,'bsum',`${inr(sum)} · ${pct(sum-(+val||0),sum)}% off`); } return; }
@@ -1325,7 +1420,7 @@ function bindDevice(d){
     const fn=ACT[a]; if(fn) fn(d, el.dataset.arg, el, ev);
   });
   scr.addEventListener('input', ev=>{ const el=ev.target.closest('[data-in]'); if(el && el.tagName!=='SELECT' && el.type!=='checkbox') IN(d, el.dataset.in, el); });
-  scr.addEventListener('change', ev=>{ const el=ev.target.closest('[data-in]'); if(el && (el.tagName==='SELECT' || el.type==='checkbox')) IN(d, el.dataset.in, el); });
+  scr.addEventListener('change', ev=>{ if(ev.target.matches && ev.target.matches('input[type=file][data-file]')){ addFiles(d, ev.target.files); return; } const el=ev.target.closest('[data-in]'); if(el && (el.tagName==='SELECT' || el.type==='checkbox')) IN(d, el.dataset.in, el); });
   scr.addEventListener('keydown', ev=>{ if(ev.key==='Enter' && ev.target.matches('input[data-in^="setIn."]')){ ev.preventDefault(); ACT.setAdd(d, ev.target.dataset.in.slice(6)); } if(ev.key==='Escape' && d.modal){ d.modal=null; render(d); } });
   scr.addEventListener('pointermove', ev=>{
     const t=ev.target.closest('[data-tip]'); const tip=scr.querySelector('.tip'); if(!tip) return;
